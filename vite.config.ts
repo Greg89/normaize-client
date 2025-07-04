@@ -21,5 +21,12 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     sourcemap: true,
+    rollupOptions: {
+      onwarn(warning, warn) {
+        // Suppress "use client" directive warnings
+        if (warning.code === 'MODULE_LEVEL_DIRECTIVE') return;
+        warn(warning);
+      },
+    },
   },
 }) 
