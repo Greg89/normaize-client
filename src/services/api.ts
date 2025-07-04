@@ -1,41 +1,11 @@
-// API configuration
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-
-export interface ApiResponse<T> {
-  data: T;
-  success: boolean;
-  message?: string;
-}
-
-export interface DataSet {
-  id: number;
-  name: string;
-  description?: string;
-  fileName: string;
-  fileType: string;
-  fileSize: number;
-  uploadedAt: string;
-  rowCount: number;
-  columnCount: number;
-  isProcessed: boolean;
-}
-
-export interface Analysis {
-  id: number;
-  name: string;
-  description?: string;
-  type: string;
-  status: string;
-  createdAt: string;
-  completedAt?: string;
-  dataSetId: number;
-}
+import { ApiResponse, DataSet, Analysis } from '../types';
+import { API_CONFIG } from '../utils/constants';
 
 class ApiService {
   private baseUrl: string;
 
   constructor() {
-    this.baseUrl = API_BASE_URL;
+    this.baseUrl = API_CONFIG.BASE_URL;
   }
 
   private async request<T>(endpoint: string, options: RequestInit = {}): Promise<ApiResponse<T>> {
