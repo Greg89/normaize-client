@@ -3,19 +3,38 @@ import { API_CONFIG } from '../utils/constants';
 
 class ApiService {
   private baseUrl: string;
+  private getToken?: () => Promise<string | null>;
 
   constructor() {
     this.baseUrl = API_CONFIG.BASE_URL;
   }
 
+  setTokenGetter(getToken: () => Promise<string | null>) {
+    this.getToken = getToken;
+  }
+
   private async request<T>(endpoint: string, options: RequestInit = {}): Promise<ApiResponse<T>> {
     const url = `${this.baseUrl}${endpoint}`;
     
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+
+    // Add any additional headers from options
+    if (options.headers) {
+      Object.assign(headers, options.headers);
+    }
+
+    // Add authorization header if token is available
+    if (this.getToken) {
+      const token = await this.getToken();
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+    }
+    
     const config: RequestInit = {
-      headers: {
-        'Content-Type': 'application/json',
-        ...options.headers,
-      },
+      headers,
       ...options,
     };
 
