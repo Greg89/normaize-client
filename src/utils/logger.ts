@@ -2,7 +2,7 @@ interface LogEntry {
   timestamp: string;
   level: string;
   message: string;
-  properties?: Record<string, any>;
+  properties?: Record<string, unknown>;
   exception?: string;
   userId?: string;
   sessionId?: string;
@@ -52,6 +52,7 @@ class Logger {
                            entry.level === 'warn' ? 'warn' : 
                            entry.level === 'info' ? 'info' : 'log';
       
+      // eslint-disable-next-line no-console
       console[consoleMethod](
         `[${entry.level.toUpperCase()}] ${entry.message}`,
         {
@@ -82,7 +83,9 @@ class Logger {
       });
     } catch (error) {
       // Fallback to console if Seq is unavailable
+      // eslint-disable-next-line no-console
       console.error('Failed to send log to Seq:', error);
+      // eslint-disable-next-line no-console
       console.log('Original log entry:', entry);
     }
   }
@@ -90,7 +93,7 @@ class Logger {
   private createLogEntry(
     level: string,
     message: string,
-    properties?: Record<string, any>,
+    properties?: Record<string, unknown>,
     exception?: Error
   ): LogEntry {
     return {
@@ -112,28 +115,28 @@ class Logger {
     return `${error.name}: ${error.message}\n${error.stack || ''}`;
   }
 
-  async error(message: string, properties?: Record<string, any>, exception?: Error): Promise<void> {
+  async error(message: string, properties?: Record<string, unknown>, exception?: Error): Promise<void> {
     const entry = this.createLogEntry('error', message, properties, exception);
     await this.sendToSeq(entry);
   }
 
-  async warn(message: string, properties?: Record<string, any>): Promise<void> {
+  async warn(message: string, properties?: Record<string, unknown>): Promise<void> {
     const entry = this.createLogEntry('warn', message, properties);
     await this.sendToSeq(entry);
   }
 
-  async info(message: string, properties?: Record<string, any>): Promise<void> {
+  async info(message: string, properties?: Record<string, unknown>): Promise<void> {
     const entry = this.createLogEntry('info', message, properties);
     await this.sendToSeq(entry);
   }
 
-  async debug(message: string, properties?: Record<string, any>): Promise<void> {
+  async debug(message: string, properties?: Record<string, unknown>): Promise<void> {
     const entry = this.createLogEntry('debug', message, properties);
     await this.sendToSeq(entry);
   }
 
   // Special method for tracking user actions
-  async trackUserAction(action: string, properties?: Record<string, any>): Promise<void> {
+  async trackUserAction(action: string, properties?: Record<string, unknown>): Promise<void> {
     await this.info(`User Action: ${action}`, {
       actionType: 'user_action',
       ...properties
