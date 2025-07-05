@@ -7,6 +7,7 @@ on:
 permissions:
   pull-requests: write
   issues: write
+  contents: read
 
 jobs:
   # Code Quality Check
@@ -145,8 +146,8 @@ jobs:
             const jobNames = ['code-quality', 'build-verification', 'security-check'];
             const results = {};
             
-            for (const need of jobNames) {
-              const status = context.payload.workflow_run?.jobs?.find(j => j.name === name)?.conclusion || (needs[name] && needs[name].result);
+            for (const name of jobNames) {
+              const status = needs[name] ? needs[name].result : 'unknown';
               results[name] = status === 'success' ? '✅' : '❌';
             }
             
