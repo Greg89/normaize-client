@@ -3,8 +3,18 @@ import ReactDOM from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
 import { Auth0ProviderWrapper } from './components/Auth0Provider'
+import { setupGlobalErrorHandlers } from './utils/globalErrorHandlers'
+import { performanceMonitor } from './utils/performanceMonitor'
+import { initSentry } from './utils/sentry'
 import App from './App'
 import './index.css'
+
+// Initialize Sentry, global error handlers and performance monitoring
+initSentry();
+setupGlobalErrorHandlers();
+performanceMonitor.monitorPageLoad();
+performanceMonitor.monitorLongTasks();
+performanceMonitor.monitorMemory();
 
 const rootElement = document.getElementById('root');
 if (rootElement) {

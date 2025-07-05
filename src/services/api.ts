@@ -1,5 +1,6 @@
 import { ApiResponse, DataSet, Analysis } from '../types';
 import { API_CONFIG } from '../utils/constants';
+import { logger } from '../utils/logger';
 
 class ApiService {
   private baseUrl: string;
@@ -15,6 +16,7 @@ class ApiService {
 
   private async request<T>(endpoint: string, options: RequestInit = {}): Promise<ApiResponse<T>> {
     const url = `${this.baseUrl}${endpoint}`;
+    const startTime = Date.now();
     
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
@@ -38,12 +40,39 @@ class ApiService {
       ...options,
     };
 
-    const response = await fetch(url, config);
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+    try {
+      const response = await fetch(url, config);
+      const duration = Date.now() - startTime;
+      
+      // Log the API call
+      await logger.trackApiCall(
+        options.method || 'GET',
+        url,
+        response.status,
+        duration
+      );
+
+      if (!response.ok) {
+        await logger.error(`API request failed: ${response.status} ${response.statusText}`, {
+          url,
+          method: options.method || 'GET',
+          status: response.status,
+          duration,
+        });
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      const duration = Date.now() - startTime;
+      await logger.error(`API request exception`, {
+        url,
+        method: options.method || 'GET',
+        duration,
+      }, error instanceof Error ? error : new Error(String(error)));
+      throw error;
     }
-    const data = await response.json();
-    return data;
   }
 
   // DataSet endpoints
