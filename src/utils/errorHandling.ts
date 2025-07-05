@@ -13,11 +13,11 @@ export enum ErrorType {
 
 // Error handler class
 export class ErrorHandler {
-  static handle(error: unknown, context?: string): void {
+  static handle(error: unknown, _context?: string): void {
     const errorInfo = this.parseError(error);
     
     // Log error for debugging
-    console.error(`Error in ${context || 'unknown context'}:`, errorInfo);
+    // console.error(`Error in ${context || 'unknown context'}:`, errorInfo); // Consider replacing with a logging utility
     
     // Show user-friendly message
     this.showUserMessage(errorInfo);

@@ -29,7 +29,7 @@ export interface Analysis {
   createdAt: string;
   completedAt?: string;
   dataSetId: number;
-  results?: any;
+  results?: unknown;
 }
 
 // Dashboard Types
