@@ -28,7 +28,7 @@ export const useAuth = () => {
     try {
       return await getAccessTokenSilently();
     } catch (error) {
-      console.error('Error getting access token:', error);
+      // Silently handle token errors - they're usually due to expired tokens
       return null;
     }
   }, [getAccessTokenSilently]);

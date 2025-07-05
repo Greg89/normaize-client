@@ -6,8 +6,12 @@ interface Auth0ProviderWrapperProps {
   children: ReactNode;
 }
 
+interface AppState {
+  returnTo?: string;
+}
+
 export const Auth0ProviderWrapper = ({ children }: Auth0ProviderWrapperProps) => {
-  const onRedirectCallback = (appState: any) => {
+  const onRedirectCallback = (appState?: AppState) => {
     window.history.replaceState(
       {},
       document.title,
