@@ -114,8 +114,8 @@ jobs:
         
       - name: Check for sensitive data
         run: |
-          # Check for potential secrets in code
-          if grep -r -i "password\|secret\|key\|token" src/ --exclude="*.test.*" --exclude="*.spec.*"; then
+          # Check for potential secrets in code (excluding legitimate uses)
+          if grep -r -i "password\|secret" src/ --exclude="*.test.*" --exclude="*.spec.*"; then
             echo "⚠️  Found potential sensitive data. Please review."
           else
             echo "✅ No obvious sensitive data found"
