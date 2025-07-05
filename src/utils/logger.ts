@@ -1,3 +1,5 @@
+import { ConsoleLogger } from './consoleLogger';
+
 interface LogEntry {
   timestamp: string;
   level: string;
@@ -48,22 +50,14 @@ class Logger {
     // Check if we have Seq configuration - if not, log to console
     if (!this.seqUrl || !this.apiKey) {
       // Log to console with full details
-      const consoleMethod = entry.level === 'error' ? 'error' : 
-                           entry.level === 'warn' ? 'warn' : 
-                           entry.level === 'info' ? 'info' : 'log';
-      
-      // eslint-disable-next-line no-console
-      console[consoleMethod](
-        `[${entry.level.toUpperCase()}] ${entry.message}`,
-        {
-          ...entry.properties,
-          correlationId: entry.correlationId,
-          sessionId: entry.sessionId,
-          userId: entry.userId,
-          environment: entry.environment,
-          timestamp: entry.timestamp
-        }
-      );
+      ConsoleLogger.log(entry.level, entry.message, {
+        ...entry.properties,
+        correlationId: entry.correlationId,
+        sessionId: entry.sessionId,
+        userId: entry.userId,
+        environment: entry.environment,
+        timestamp: entry.timestamp
+      });
       return;
     }
 
@@ -83,10 +77,8 @@ class Logger {
       });
     } catch (error) {
       // Fallback to console if Seq is unavailable
-      // eslint-disable-next-line no-console
-      console.error('Failed to send log to Seq:', error);
-      // eslint-disable-next-line no-console
-      console.log('Original log entry:', entry);
+      ConsoleLogger.error('Failed to send log to Seq:', { error: String(error) });
+      ConsoleLogger.info('Original log entry:', entry as unknown as Record<string, unknown>);
     }
   }
 
