@@ -1,6 +1,7 @@
-import { Auth0Provider } from '@auth0/auth0-react';
-import { ReactNode } from 'react';
+import { Auth0Provider, useAuth0 } from '@auth0/auth0-react';
+import React, { ReactNode } from 'react';
 import { auth0Config } from '../utils/auth0-config';
+import { setSentryUser, clearSentryUser } from '../utils/sentry';
 
 interface Auth0ProviderWrapperProps {
   children: ReactNode;
@@ -28,7 +29,24 @@ export const Auth0ProviderWrapper = ({ children }: Auth0ProviderWrapperProps) =>
       cacheLocation={auth0Config.cacheLocation}
       useRefreshTokens={auth0Config.useRefreshTokens}
     >
-      {children}
+      <SentryUserManager>
+        {children}
+      </SentryUserManager>
     </Auth0Provider>
   );
+};
+
+// Component to manage Sentry user context
+const SentryUserManager: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const { user, isAuthenticated } = useAuth0();
+
+  React.useEffect(() => {
+    if (isAuthenticated && user) {
+      setSentryUser(user);
+    } else {
+      clearSentryUser();
+    }
+  }, [isAuthenticated, user]);
+
+  return <>{children}</>;
 }; 

@@ -7,11 +7,11 @@ import Visualization from './pages/Visualization'
 import Login from './pages/Login'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { ApiInitializer } from './components/ApiInitializer'
-import { ErrorBoundaryWithLogging } from './components/ErrorBoundaryWithLogging'
+import { SentryErrorBoundary } from './components/SentryErrorBoundary'
 
 function App() {
   return (
-    <ErrorBoundaryWithLogging>
+    <SentryErrorBoundary>
       <ApiInitializer>
         <Layout>
           <Routes>
@@ -39,7 +39,7 @@ function App() {
           </Routes>
         </Layout>
       </ApiInitializer>
-    </ErrorBoundaryWithLogging>
+    </SentryErrorBoundary>
   )
 }
 

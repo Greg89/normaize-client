@@ -85,7 +85,7 @@ export class PerformanceMonitor {
   // Monitor memory usage (if available)
   monitorMemory(): void {
     if ('memory' in performance) {
-      const memory = (performance as any).memory;
+      const memory = (performance as unknown as { memory: { usedJSHeapSize: number; totalJSHeapSize: number; jsHeapSizeLimit: number } }).memory;
       logger.info('Memory Usage', {
         actionType: 'performance',
         operation: 'memory_usage',
