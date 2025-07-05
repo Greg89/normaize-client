@@ -4,8 +4,10 @@ import {
   HomeIcon, 
   DocumentTextIcon, 
   ChartBarIcon, 
-  ChartPieIcon 
+  ChartPieIcon,
+  UserCircleIcon
 } from '@heroicons/react/24/outline'
+import { useAuth } from '../hooks/useAuth'
 
 interface LayoutProps {
   children: ReactNode
@@ -20,6 +22,7 @@ const navigation = [
 
 export default function Layout({ children }: LayoutProps) {
   const location = useLocation()
+  const { user, logout } = useAuth()
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -30,6 +33,20 @@ export default function Layout({ children }: LayoutProps) {
             <div className="flex items-center">
               <h1 className="text-xl font-semibold text-gray-900">Normaize</h1>
               <span className="ml-2 text-sm text-gray-500">Data Toolbox</span>
+            </div>
+            <div className="flex items-center space-x-4">
+              {user && (
+                <div className="flex items-center space-x-2">
+                  <UserCircleIcon className="h-6 w-6 text-gray-400" />
+                  <span className="text-sm text-gray-700">{user.name || user.email}</span>
+                  <button
+                    onClick={logout}
+                    className="text-sm text-gray-500 hover:text-gray-700"
+                  >
+                    Logout
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>
