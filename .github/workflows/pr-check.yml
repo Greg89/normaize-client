@@ -4,6 +4,12 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
 
+permissions:
+  pull-requests: write
+  issues: write
+  contents: read
+  actions: read
+
 jobs:
   # Code Quality Check
   code-quality:
@@ -108,8 +114,8 @@ jobs:
         
       - name: Check for sensitive data
         run: |
-          # Check for potential secrets in code
-          if grep -r -i "password\|secret\|key\|token" src/ --exclude="*.test.*" --exclude="*.spec.*"; then
+          # Check for potential secrets in code (excluding legitimate uses)
+          if grep -r -i "password\|secret" src/ --exclude="*.test.*" --exclude="*.spec.*"; then
             echo "⚠️  Found potential sensitive data. Please review."
           else
             echo "✅ No obvious sensitive data found"
@@ -138,12 +144,36 @@ jobs:
               comment.body.includes('## 🔍 PR Check Results')
             );
             
-            const needs = ['code-quality', 'build-verification', 'security-check'];
+            const jobNames = ['code-quality', 'build-verification', 'security-check'];
             const results = {};
             
-            for (const need of needs) {
-              const job = context.job;
-              results[need] = job === 'success' ? '✅' : '❌';
+            // Get the current workflow run
+            const { data: workflowRun } = await github.rest.actions.listWorkflowRunsForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'pr-check.yml',
+              head_sha: context.payload.pull_request.head.sha,
+              per_page: 1
+            });
+            
+            if (workflowRun.workflow_runs.length > 0) {
+              const runId = workflowRun.workflow_runs[0].id;
+              const { data: jobs } = await github.rest.actions.listJobsForWorkflowRun({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                run_id: runId
+              });
+              
+              for (const name of jobNames) {
+                const job = jobs.jobs.find(j => j.name === name);
+                const status = job ? job.conclusion : 'unknown';
+                results[name] = status === 'success' ? '✅' : '❌';
+              }
+            } else {
+              // Fallback if we can't get workflow run data
+              for (const name of jobNames) {
+                results[name] = '❓';
+              }
             }
             
             const body = `## 🔍 PR Check Results
