@@ -7,11 +7,11 @@ import Visualization from './pages/Visualization'
 import Login from './pages/Login'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { ApiInitializer } from './components/ApiInitializer'
-import ErrorBoundary from './components/ErrorBoundary'
+import { ErrorBoundaryWithLogging } from './components/ErrorBoundaryWithLogging'
 
 function App() {
   return (
-    <ErrorBoundary>
+    <ErrorBoundaryWithLogging>
       <ApiInitializer>
         <Layout>
           <Routes>
@@ -39,7 +39,7 @@ function App() {
           </Routes>
         </Layout>
       </ApiInitializer>
-    </ErrorBoundary>
+    </ErrorBoundaryWithLogging>
   )
 }
 
