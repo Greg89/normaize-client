@@ -37,7 +37,7 @@ jobs:
         
       - name: Check for console.log statements
         run: |
-          if grep -r "console\.log" src/; then
+          if find src/ \( -name "*.ts" -o -name "*.tsx" \) ! -name "consoleLogger.ts" -exec grep -l "console\.log" {} \;; then
             echo "❌ Found console.log statements. Please remove them before merging."
             exit 1
           fi
