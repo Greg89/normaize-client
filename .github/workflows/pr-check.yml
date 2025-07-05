@@ -8,6 +8,7 @@ permissions:
   pull-requests: write
   issues: write
   contents: read
+  actions: read
 
 jobs:
   # Code Quality Check
@@ -146,9 +147,33 @@ jobs:
             const jobNames = ['code-quality', 'build-verification', 'security-check'];
             const results = {};
             
-            for (const name of jobNames) {
-              const status = needs[name] ? needs[name].result : 'unknown';
-              results[name] = status === 'success' ? '✅' : '❌';
+            // Get the current workflow run
+            const { data: workflowRun } = await github.rest.actions.listWorkflowRunsForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'pr-check.yml',
+              head_sha: context.payload.pull_request.head.sha,
+              per_page: 1
+            });
+            
+            if (workflowRun.workflow_runs.length > 0) {
+              const runId = workflowRun.workflow_runs[0].id;
+              const { data: jobs } = await github.rest.actions.listJobsForWorkflowRun({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                run_id: runId
+              });
+              
+              for (const name of jobNames) {
+                const job = jobs.jobs.find(j => j.name === name);
+                const status = job ? job.conclusion : 'unknown';
+                results[name] = status === 'success' ? '✅' : '❌';
+              }
+            } else {
+              // Fallback if we can't get workflow run data
+              for (const name of jobNames) {
+                results[name] = '❓';
+              }
             }
             
             const body = `## 🔍 PR Check Results
