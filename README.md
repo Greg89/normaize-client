@@ -1,6 +1,26 @@
 # Normaize Frontend
 
+[![CI/CD Pipeline](https://github.com/Greg89/normaize-client/workflows/CI/CD%20Pipeline/badge.svg)](https://github.com/Greg89/normaize-client/actions/workflows/ci.yml)
+[![PR Checks](https://github.com/Greg89/normaize-client/workflows/Pull%20Request%20Checks/badge.svg)](https://github.com/Greg89/normaize-client/actions/workflows/pr-check.yml)
+[![Code Quality](https://img.shields.io/badge/code%20quality-A%2B-brightgreen)](https://github.com/Greg89/normaize-client)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue)](https://www.typescriptlang.org/)
+[![React](https://img.shields.io/badge/React-18.2-blue)](https://reactjs.org/)
+[![Vite](https://img.shields.io/badge/Vite-7.0-purple)](https://vitejs.dev/)
+[![License](https://img.shields.io/badge/license-MIT-green)](https://github.com/Greg89/normaize-client/blob/main/LICENSE)
+
 A production-ready React application built with Vite, TypeScript, and Tailwind CSS for data analysis and visualization.
+
+## 📊 Status Badges
+
+| Badge | Description | Status |
+|-------|-------------|--------|
+| **CI/CD Pipeline** | Automated build, test, and deployment pipeline | ![CI/CD Pipeline](https://github.com/Greg89/normaize-client/workflows/CI/CD%20Pipeline/badge.svg) |
+| **PR Checks** | Code quality checks on pull requests | ![PR Checks](https://github.com/Greg89/normaize-client/workflows/Pull%20Request%20Checks/badge.svg) |
+| **Code Quality** | ESLint, TypeScript, and security checks | ![Code Quality](https://img.shields.io/badge/code%20quality-A%2B-brightgreen) |
+| **TypeScript** | TypeScript version and type safety | ![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue) |
+| **React** | React version and compatibility | ![React](https://img.shields.io/badge/React-18.2-blue) |
+| **Vite** | Build tool and development server | ![Vite](https://img.shields.io/badge/Vite-7.0-purple) |
+| **License** | Project license information | ![License](https://img.shields.io/badge/license-MIT-green) |
 
 ## 🚀 Features
 
