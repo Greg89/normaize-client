@@ -4,6 +4,10 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
 
+permissions:
+  pull-requests: write
+  issues: write
+
 jobs:
   # Code Quality Check
   code-quality:
@@ -138,12 +142,12 @@ jobs:
               comment.body.includes('## 🔍 PR Check Results')
             );
             
-            const needs = ['code-quality', 'build-verification', 'security-check'];
+            const jobNames = ['code-quality', 'build-verification', 'security-check'];
             const results = {};
             
-            for (const need of needs) {
-              const job = context.job;
-              results[need] = job === 'success' ? '✅' : '❌';
+            for (const need of jobNames) {
+              const status = context.payload.workflow_run?.jobs?.find(j => j.name === name)?.conclusion || (needs[name] && needs[name].result);
+              results[name] = status === 'success' ? '✅' : '❌';
             }
             
             const body = `## 🔍 PR Check Results
