@@ -108,42 +108,6 @@ jobs:
       - name: Check for outdated packages
         run: npm outdated || true
 
-  # Deploy to Beta (develop branch)
-  deploy-beta:
-    name: Deploy to Beta
-    runs-on: ubuntu-latest
-    needs: [lint-and-type-check, build-and-test, security-audit]
-    if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
-    environment: beta
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        
-      - name: Deploy to Railway Beta
-        uses: railway/deploy@v1
-        with:
-          service: ${{ secrets.RAILWAY_BETA_SERVICE_NAME }}
-          token: ${{ secrets.RAILWAY_TOKEN }}
-
-  # Deploy to Production (main branch)
-  deploy-production:
-    name: Deploy to Production
-    runs-on: ubuntu-latest
-    needs: [lint-and-type-check, build-and-test, security-audit]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    environment: production
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        
-      - name: Deploy to Railway Production
-        uses: railway/deploy@v1
-        with:
-          service: ${{ secrets.RAILWAY_PRODUCTION_SERVICE_NAME }}
-          token: ${{ secrets.RAILWAY_TOKEN }}
-
   # Performance Check
   performance-check:
     name: Performance Check
