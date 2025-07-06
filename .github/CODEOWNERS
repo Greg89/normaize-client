@@ -1,0 +1,40 @@
+# Global owners - these people will be the default owners for everything in the repo
+* Greg89
+
+# Frontend specific files
+/src/ Greg89
+*.tsx Greg89
+*.ts Greg89
+*.js Greg89
+*.jsx Greg89
+
+# Configuration files
+package.json Greg89
+package-lock.json Greg89
+vite.config.ts Greg89
+tsconfig.json Greg89
+tailwind.config.js Greg89
+railway.toml Greg89
+
+# Documentation
+README.md Greg89
+PRODUCTION_CHECKLIST.md Greg89
+*.md Greg89
+
+# GitHub Actions
+.github/workflows/ Greg89
+.github/CODEOWNERS Greg89
+
+# Styling
+*.css Greg89
+*.scss Greg89
+
+# Build outputs (should not be committed)
+/dist/ Greg89
+/build/ Greg89
+
+# Dependencies (should not be committed)
+/node_modules/ Greg89
+
+# Environment files (should not be committed)
+.env* Greg89 

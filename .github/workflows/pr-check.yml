@@ -1,0 +1,206 @@
+name: Pull Request Checks
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  pull-requests: write
+  issues: write
+  contents: read
+  actions: read
+
+jobs:
+  # Code Quality Check
+  code-quality:
+    name: Code Quality
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Run ESLint
+        run: npm run lint
+        
+      - name: Type check
+        run: npx tsc --noEmit --strict
+        
+      - name: Check for console.log statements
+        run: |
+          if grep -r "console\.log" src/ --exclude="consoleLogger.ts" --exclude="*.test.ts" --exclude="*.test.tsx" --exclude="*.spec.ts" --exclude="*.spec.tsx"; then
+            echo "❌ Found console.log statements. Please remove them before merging."
+            exit 1
+          fi
+          echo "✅ No console.log statements found"
+          
+      - name: Check for TODO comments
+        run: |
+          if grep -r "TODO" src/; then
+            echo "⚠️  Found TODO comments. Consider addressing them before merging."
+          fi
+
+  # Build Verification
+  build-verification:
+    name: Build Verification
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Build application
+        run: npm run build
+        
+      - name: Verify build artifacts
+        run: |
+          echo "📁 Build artifacts:"
+          ls -la dist/
+          echo ""
+          echo "📄 index.html content preview:"
+          head -20 dist/index.html
+          
+      - name: Check bundle size
+        run: |
+          echo "📦 Bundle size analysis:"
+          du -h dist/assets/*.js
+          du -h dist/assets/*.css
+          
+          TOTAL_SIZE=$(du -s dist/ | awk '{print $1}')
+          echo "📊 Total build size: ${TOTAL_SIZE}KB"
+          
+          if [ "$TOTAL_SIZE" -gt 10000 ]; then
+            echo "⚠️  Warning: Build size is large. Consider optimization."
+          fi
+
+  # Security Check
+  security-check:
+    name: Security Check
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Run security audit
+        run: npm audit --audit-level=moderate
+        
+      - name: Check for sensitive data
+        run: |
+          # Check for potential secrets in code (excluding legitimate uses)
+          if grep -r -i "password\|secret" src/ --exclude="*.test.*" --exclude="*.spec.*"; then
+            echo "⚠️  Found potential sensitive data. Please review."
+          else
+            echo "✅ No obvious sensitive data found"
+          fi
+
+  # Comment PR with results
+  comment-pr:
+    name: Comment PR
+    runs-on: ubuntu-latest
+    needs: [code-quality, build-verification, security-check]
+    if: always()
+    
+    steps:
+      - name: Comment PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: comments } = await github.rest.issues.listComments({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+            });
+            
+            const botComment = comments.find(comment => 
+              comment.user.type === 'Bot' && 
+              comment.body.includes('## 🔍 PR Check Results')
+            );
+            
+            const jobNames = ['code-quality', 'build-verification', 'security-check'];
+            const results = {};
+            
+            // Get the current workflow run
+            const { data: workflowRun } = await github.rest.actions.listWorkflowRunsForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'pr-check.yml',
+              head_sha: context.payload.pull_request.head.sha,
+              per_page: 1
+            });
+            
+            if (workflowRun.workflow_runs.length > 0) {
+              const runId = workflowRun.workflow_runs[0].id;
+              const { data: jobs } = await github.rest.actions.listJobsForWorkflowRun({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                run_id: runId
+              });
+              
+              for (const name of jobNames) {
+                const job = jobs.jobs.find(j => j.name === name);
+                const status = job ? job.conclusion : 'unknown';
+                results[name] = status === 'success' ? '✅' : '❌';
+              }
+            } else {
+              // Fallback if we can't get workflow run data
+              for (const name of jobNames) {
+                results[name] = '❓';
+              }
+            }
+            
+            const body = `## 🔍 PR Check Results
+            
+            | Check | Status |
+            |------|--------|
+            | Code Quality | ${results['code-quality']} |
+            | Build Verification | ${results['build-verification']} |
+            | Security Check | ${results['security-check']} |
+            
+            **Summary**: ${Object.values(results).every(r => r === '✅') ? 'All checks passed! 🎉' : 'Some checks failed. Please review.'}
+            
+            ---
+            *This comment was automatically generated by GitHub Actions*`;
+            
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                comment_id: botComment.id,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: body,
+              });
+            } 

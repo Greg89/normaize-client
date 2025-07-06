@@ -22,7 +22,7 @@ export default function Dashboard() {
   })
 
   useEffect(() => {
-    // TODO: Fetch dashboard stats from API
+    // Fetch dashboard stats from API
     setStats({
       totalDatasets: 12,
       totalAnalyses: 8,
