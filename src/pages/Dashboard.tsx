@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { 
   DocumentTextIcon, 
   ChartBarIcon, 
@@ -14,6 +15,7 @@ interface DashboardStats {
 }
 
 export default function Dashboard() {
+  const navigate = useNavigate();
   const [stats, setStats] = useState<DashboardStats>({
     totalDatasets: 0,
     totalAnalyses: 0,
@@ -30,6 +32,14 @@ export default function Dashboard() {
       recentUploads: 3
     })
   }, [])
+
+  const handleQuickAction = (action: { name: string; href: string }) => {
+    if (action.name === 'Upload Dataset') {
+      navigate('/datasets?upload=true');
+    } else {
+      navigate(action.href);
+    }
+  };
 
   const quickActions = [
     {
@@ -118,7 +128,11 @@ export default function Dashboard() {
         <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {quickActions.map((action) => (
-            <div key={action.name} className="card hover:shadow-lg transition-shadow cursor-pointer">
+            <div 
+              key={action.name} 
+              className="card hover:shadow-lg transition-shadow cursor-pointer"
+              onClick={() => handleQuickAction(action)}
+            >
               <div className="flex items-center">
                 <div className={`flex-shrink-0 p-3 rounded-lg ${action.color}`}>
                   <action.icon className="h-6 w-6 text-white" />

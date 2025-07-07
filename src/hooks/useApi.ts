@@ -23,11 +23,14 @@ export function useApi<T>(
     error: null,
   });
 
+  // Memoize the apiCall to prevent infinite loops
+  const memoizedApiCall = useCallback(apiCall, dependencies);
+
   const fetchData = useCallback(async () => {
     setState(prev => ({ ...prev, loading: true, error: null }));
     
     try {
-      const data = await apiCall();
+      const data = await memoizedApiCall();
       setState({ data, loading: false, error: null });
     } catch (error) {
       ErrorHandler.handle(error, 'useApi');
@@ -37,7 +40,7 @@ export function useApi<T>(
         error: error instanceof Error ? error.message : 'An error occurred' 
       }));
     }
-  }, [apiCall]);
+  }, [memoizedApiCall]);
 
   const setData = useCallback((data: T) => {
     setState(prev => ({ ...prev, data }));
@@ -45,8 +48,7 @@ export function useApi<T>(
 
   useEffect(() => {
     fetchData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fetchData, ...dependencies]);
+  }, [fetchData]);
 
   return {
     ...state,

@@ -89,9 +89,21 @@ class ApiService {
       formData.append('description', description);
     }
 
+    // Get token for authentication
+    let token = null;
+    if (this.getToken) {
+      token = await this.getToken();
+    }
+
+    const headers: Record<string, string> = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
     const response = await fetch(`${this.baseUrl}/api/datasets/upload`, {
       method: 'POST',
       body: formData,
+      headers,
     });
 
     if (!response.ok) {
