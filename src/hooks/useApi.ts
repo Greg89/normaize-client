@@ -23,8 +23,7 @@ export function useApi<T>(
     error: null,
   });
 
-  // Memoize the apiCall to prevent infinite loops
-  const memoizedApiCall = useCallback(apiCall, dependencies);
+  const memoizedApiCall = useCallback(apiCall, [apiCall, ...dependencies]);
 
   const fetchData = useCallback(async () => {
     setState(prev => ({ ...prev, loading: true, error: null }));

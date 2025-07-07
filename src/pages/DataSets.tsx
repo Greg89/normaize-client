@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { toast } from 'react-hot-toast';
 import FileUpload from '../components/FileUpload';
 import { useDataSets } from '../hooks/useApi';
 import { DataSet } from '../types';
+import { logger } from '../utils/logger';
 
 export default function DataSets() {
   const { data: datasets, loading, error, refetch } = useDataSets();
@@ -23,8 +25,11 @@ export default function DataSets() {
   };
 
   const handleUploadError = (error: string) => {
-    console.error('Upload error:', error);
-    // You could add a toast notification here
+    logger.error('Upload error', { error });
+    toast.error(`Upload failed: ${error}`, {
+      duration: 5000,
+      position: 'top-right',
+    });
   };
 
   return (

@@ -30,22 +30,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
   const abortControllerRef = useRef<AbortController | null>(null);
   const { getToken } = useAuth();
 
-  const onDrop = useCallback(async (acceptedFiles: File[]) => {
-    const newUploads = acceptedFiles.map(file => ({
-      fileName: file.name,
-      progress: 0,
-      status: 'uploading' as const
-    }));
-
-    setUploads(prev => [...prev, ...newUploads]);
-
-    for (let i = 0; i < acceptedFiles.length; i++) {
-      const file = acceptedFiles[i];
-      await uploadFile(file, newUploads.length - acceptedFiles.length + i);
-    }
-  }, []);
-
-  const uploadFile = async (file: File, uploadIndex: number) => {
+  const uploadFile = useCallback(async (file: File, uploadIndex: number) => {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('name', file.name.replace(/\.[^/.]+$/, '')); // Remove extension
@@ -97,7 +82,22 @@ const FileUpload: React.FC<FileUploadProps> = ({
       
       onUploadError(error instanceof Error ? error.message : 'Upload failed');
     }
-  };
+  }, [getToken, onUploadSuccess, onUploadError]);
+
+  const onDrop = useCallback(async (acceptedFiles: File[]) => {
+    const newUploads = acceptedFiles.map(file => ({
+      fileName: file.name,
+      progress: 0,
+      status: 'uploading' as const
+    }));
+
+    setUploads(prev => [...prev, ...newUploads]);
+
+    for (let i = 0; i < acceptedFiles.length; i++) {
+      const file = acceptedFiles[i];
+      await uploadFile(file, newUploads.length - acceptedFiles.length + i);
+    }
+  }, [uploadFile]);
 
   const removeUpload = (index: number) => {
     if (abortControllerRef.current) {
