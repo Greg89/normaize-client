@@ -46,6 +46,7 @@ export function useApi<T>(
   }, []);
 
   useEffect(() => {
+    // Only fetch on mount, not on every error
     fetchData();
   }, [fetchData]);
 
@@ -58,13 +59,16 @@ export function useApi<T>(
 
 // Specific hooks for common API calls
 export function useDataSets() {
-  return useApi(() => apiService.getDataSets(), []);
+  const apiCall = useCallback(() => apiService.getDataSets(), []);
+  return useApi(apiCall, []);
 }
 
 export function useAnalyses() {
-  return useApi(() => apiService.getAnalyses(), []);
+  const apiCall = useCallback(() => apiService.getAnalyses(), []);
+  return useApi(apiCall, []);
 }
 
 export function useAnalysis(id: number) {
-  return useApi(() => apiService.getAnalysis(id), [id]);
+  const apiCall = useCallback(() => apiService.getAnalysis(id), [id]);
+  return useApi(apiCall, [id]);
 } 
