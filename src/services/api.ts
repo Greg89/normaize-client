@@ -78,7 +78,15 @@ class ApiService {
   // DataSet endpoints
   async getDataSets(): Promise<DataSet[]> {
     const response = await this.request<DataSet[]>('/api/datasets');
-    return response.data;
+    
+    // Handle both response formats
+    if (Array.isArray(response)) {
+      return response; // Server returns array directly
+    } else if (response.data) {
+      return response.data; // Server returns { data: [...] }
+    } else {
+      return [];
+    }
   }
 
   async uploadDataSet(file: File, name: string, description?: string): Promise<DataSet> {
