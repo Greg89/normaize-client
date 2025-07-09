@@ -30,9 +30,20 @@ class Logger {
     this.correlationId = this.generateCorrelationId();
     this.sessionId = this.generateSessionId();
     
+    // Enhanced initialization logging for debugging
+    ConsoleLogger.info('Logger initialization', {
+      hasSeqUrl: !!this.seqUrl,
+      hasApiKey: !!this.apiKey,
+      seqUrl: this.seqUrl || 'NOT_SET',
+      environment: this.environment,
+      origin: typeof window !== 'undefined' ? window.location.origin : 'SERVER_SIDE'
+    });
+    
     // Log initialization to console for debugging
     if (!this.seqUrl || !this.apiKey) {
       ConsoleLogger.info('Logger initialized without Seq configuration - using console logging only');
+    } else {
+      ConsoleLogger.info('Logger initialized with Seq configuration - will attempt to send logs to Seq');
     }
   }
 
@@ -105,15 +116,39 @@ class Logger {
         headers['X-Seq-ApiKey'] = this.apiKey;
       }
 
-      await fetch(`${this.seqUrl}/api/events/raw`, {
+      // Fix URL construction to prevent double slashes
+      const seqUrl = this.seqUrl.endsWith('/') ? this.seqUrl.slice(0, -1) : this.seqUrl;
+      const fullUrl = `${seqUrl}/api/events/raw`;
+      
+      // Debug logging for troubleshooting
+      ConsoleLogger.debug('Attempting to send log to Seq', {
+        seqUrl: this.seqUrl,
+        fullUrl,
+        hasApiKey: !!this.apiKey,
+        origin: window.location.origin
+      });
+
+      const response = await fetch(fullUrl, {
         method: 'POST',
         headers,
         body: JSON.stringify([entry]),
       });
+
+      if (!response.ok) {
+        throw new Error(`Seq responded with status ${response.status}: ${response.statusText}`);
+      }
     } catch (error) {
-      // Fallback to console if Seq is unavailable
-      ConsoleLogger.error('Failed to send log to Seq:', { error: String(error) });
-      ConsoleLogger.info('Original log entry:', entry as unknown as Record<string, unknown>);
+      // Enhanced error logging for CORS and other issues
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      ConsoleLogger.error('Failed to send log to Seq:', { 
+        error: errorMessage,
+        seqUrl: this.seqUrl,
+        origin: window.location.origin,
+        userAgent: navigator.userAgent
+      });
+      
+      // Log the original entry to console as fallback
+      ConsoleLogger.info('Original log entry (fallback):', entry as unknown as Record<string, unknown>);
     } finally {
       this.isLogging = false;
     }
