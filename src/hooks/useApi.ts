@@ -23,11 +23,13 @@ export function useApi<T>(
     error: null,
   });
 
+  const memoizedApiCall = useCallback(apiCall, [apiCall, ...dependencies]);
+
   const fetchData = useCallback(async () => {
     setState(prev => ({ ...prev, loading: true, error: null }));
     
     try {
-      const data = await apiCall();
+      const data = await memoizedApiCall();
       setState({ data, loading: false, error: null });
     } catch (error) {
       ErrorHandler.handle(error, 'useApi');
@@ -37,16 +39,16 @@ export function useApi<T>(
         error: error instanceof Error ? error.message : 'An error occurred' 
       }));
     }
-  }, [apiCall]);
+  }, [memoizedApiCall]);
 
   const setData = useCallback((data: T) => {
     setState(prev => ({ ...prev, data }));
   }, []);
 
   useEffect(() => {
+    // Only fetch on mount, not on every error
     fetchData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fetchData, ...dependencies]);
+  }, [fetchData]);
 
   return {
     ...state,
@@ -57,13 +59,16 @@ export function useApi<T>(
 
 // Specific hooks for common API calls
 export function useDataSets() {
-  return useApi(() => apiService.getDataSets(), []);
+  const apiCall = useCallback(() => apiService.getDataSets(), []);
+  return useApi(apiCall, []);
 }
 
 export function useAnalyses() {
-  return useApi(() => apiService.getAnalyses(), []);
+  const apiCall = useCallback(() => apiService.getAnalyses(), []);
+  return useApi(apiCall, []);
 }
 
 export function useAnalysis(id: number) {
-  return useApi(() => apiService.getAnalysis(id), [id]);
+  const apiCall = useCallback(() => apiService.getAnalysis(id), [id]);
+  return useApi(apiCall, [id]);
 } 

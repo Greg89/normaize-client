@@ -78,7 +78,15 @@ class ApiService {
   // DataSet endpoints
   async getDataSets(): Promise<DataSet[]> {
     const response = await this.request<DataSet[]>('/api/datasets');
-    return response.data;
+    
+    // Handle both response formats
+    if (Array.isArray(response)) {
+      return response; // Server returns array directly
+    } else if (response.data) {
+      return response.data; // Server returns { data: [...] }
+    } else {
+      return [];
+    }
   }
 
   async uploadDataSet(file: File, name: string, description?: string): Promise<DataSet> {
@@ -89,9 +97,21 @@ class ApiService {
       formData.append('description', description);
     }
 
+    // Get token for authentication
+    let token = null;
+    if (this.getToken) {
+      token = await this.getToken();
+    }
+
+    const headers: Record<string, string> = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
     const response = await fetch(`${this.baseUrl}/api/datasets/upload`, {
       method: 'POST',
       body: formData,
+      headers,
     });
 
     if (!response.ok) {

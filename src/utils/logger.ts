@@ -21,13 +21,19 @@ class Logger {
   private correlationId: string;
   private sessionId: string;
   private userId?: string;
+  private isLogging = false; // Prevent recursive logging
 
   constructor() {
     this.seqUrl = import.meta.env.VITE_SEQ_URL || '';
     this.apiKey = import.meta.env.VITE_SEQ_API_KEY;
-    this.environment = 'production'; // Default to production for Seq
+    this.environment = import.meta.env.VITE_NODE_ENV || 'production';
     this.correlationId = this.generateCorrelationId();
     this.sessionId = this.generateSessionId();
+    
+    // Log initialization to console for debugging
+    if (!this.seqUrl || !this.apiKey) {
+      ConsoleLogger.info('Logger initialized without Seq configuration - using console logging only');
+    }
   }
 
   private generateCorrelationId(): string {
@@ -47,6 +53,34 @@ class Logger {
   }
 
   private async sendToSeq(entry: LogEntry): Promise<void> {
+    // Prevent recursive logging
+    if (this.isLogging) {
+      ConsoleLogger.log(entry.level, entry.message, {
+        ...entry.properties,
+        correlationId: entry.correlationId,
+        sessionId: entry.sessionId,
+        userId: entry.userId,
+        environment: entry.environment,
+        timestamp: entry.timestamp,
+        _recursive: true
+      });
+      return;
+    }
+
+    // Additional safety check for logging-related URLs
+    if (entry.properties?.url && (entry.properties.url as string).includes('/api/events/raw')) {
+      ConsoleLogger.log(entry.level, entry.message, {
+        ...entry.properties,
+        correlationId: entry.correlationId,
+        sessionId: entry.sessionId,
+        userId: entry.userId,
+        environment: entry.environment,
+        timestamp: entry.timestamp,
+        _loggingUrl: true
+      });
+      return;
+    }
+
     // Check if we have Seq configuration - if not, log to console
     if (!this.seqUrl || !this.apiKey) {
       // Log to console with full details
@@ -61,6 +95,7 @@ class Logger {
       return;
     }
 
+    this.isLogging = true;
     try {
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
@@ -79,6 +114,8 @@ class Logger {
       // Fallback to console if Seq is unavailable
       ConsoleLogger.error('Failed to send log to Seq:', { error: String(error) });
       ConsoleLogger.info('Original log entry:', entry as unknown as Record<string, unknown>);
+    } finally {
+      this.isLogging = false;
     }
   }
 
