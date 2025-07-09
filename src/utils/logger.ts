@@ -32,7 +32,7 @@ class Logger {
     
     // Log initialization to console for debugging
     if (!this.seqUrl || !this.apiKey) {
-      console.log('Logger initialized without Seq configuration - using console logging only');
+      ConsoleLogger.info('Logger initialized without Seq configuration - using console logging only');
     }
   }
 
