@@ -4,6 +4,7 @@ interface LogEntry {
   timestamp: string;
   level: string;
   message: string;
+  messageTemplate: string; // Required by Seq
   properties?: Record<string, unknown>;
   exception?: string;
   userId?: string;
@@ -189,6 +190,7 @@ class Logger {
       timestamp: new Date().toISOString(),
       level: seqLevel,
       message,
+      messageTemplate: message, // Add required MessageTemplate property
       properties,
       exception: exception ? this.formatException(exception) : undefined,
       userId: this.userId,
