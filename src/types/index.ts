@@ -5,6 +5,13 @@ export interface ApiResponse<T> {
   message?: string;
 }
 
+// Upload Response Types
+export interface DataSetUploadResponse {
+  id: number;
+  message: string;
+  success: boolean;
+}
+
 // DataSet Types
 export interface DataSet {
   id: number;

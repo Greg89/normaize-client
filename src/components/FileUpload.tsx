@@ -45,13 +45,28 @@ const FileUpload: React.FC<FileUploadProps> = ({
         `Uploaded on ${new Date().toLocaleString()}`
       );
       
+      // Debug: Log the response structure
+      console.log('🔍 Upload Response Debug:', {
+        result,
+        resultType: typeof result,
+        hasId: result && typeof result === 'object' && 'id' in result,
+        resultKeys: result ? Object.keys(result) : 'null/undefined'
+      });
+      
+      // The ApiService now returns the correct structure
+      const datasetId = result.id;
+      
+      if (!datasetId) {
+        throw new Error('Upload succeeded but no dataset ID returned from server');
+      }
+      
       setUploads(prev => prev.map((upload, index) => 
         index === uploadIndex 
-          ? { ...upload, progress: 100, status: 'success', dataSetId: result.id }
+          ? { ...upload, progress: 100, status: 'success', dataSetId: datasetId }
           : upload
       ));
       
-      onUploadSuccess(result.id, file.name);
+      onUploadSuccess(datasetId, file.name);
     } catch (error) {
       if (error instanceof Error && error.name === 'AbortError') {
         return; // Upload was cancelled
