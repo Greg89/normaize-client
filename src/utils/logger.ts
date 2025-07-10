@@ -120,22 +120,40 @@ class Logger {
       const seqUrl = this.seqUrl.endsWith('/') ? this.seqUrl.slice(0, -1) : this.seqUrl;
       const fullUrl = `${seqUrl}/api/events/raw`;
       
-      // Debug logging for troubleshooting
-      ConsoleLogger.debug('Attempting to send log to Seq', {
-        seqUrl: this.seqUrl,
-        fullUrl,
+      // Enhanced debugging - log the exact payload
+      const payload = [entry];
+      ConsoleLogger.debug('Seq Request Details', {
+        url: fullUrl,
+        headers: { ...headers, 'X-Seq-ApiKey': headers['X-Seq-ApiKey'] ? '[REDACTED]' : 'NOT_SET' },
+        payload: JSON.stringify(payload, null, 2),
+        payloadSize: JSON.stringify(payload).length,
         hasApiKey: !!this.apiKey,
         origin: window.location.origin
       });
 
+      // Validate JSON structure
+      try {
+        JSON.stringify(payload);
+      } catch (jsonError) {
+        throw new Error(`Invalid JSON structure: ${jsonError}`);
+      }
+
+      // Check payload size
+      const payloadString = JSON.stringify(payload);
+      if (payloadString.length > 1000000) { // 1MB limit
+        throw new Error(`Payload too large: ${payloadString.length} bytes`);
+      }
+
       const response = await fetch(fullUrl, {
         method: 'POST',
         headers,
-        body: JSON.stringify([entry]),
+        body: payloadString,
       });
 
       if (!response.ok) {
-        throw new Error(`Seq responded with status ${response.status}: ${response.statusText}`);
+        // Get response body for better error details
+        const errorText = await response.text();
+        throw new Error(`Seq responded with status ${response.status}: ${response.statusText}. Response: ${errorText}`);
       }
     } catch (error) {
       // Enhanced error logging for CORS and other issues
@@ -160,9 +178,12 @@ class Logger {
     properties?: Record<string, unknown>,
     exception?: Error
   ): LogEntry {
+    // Map log levels to Seq format
+    const seqLevel = this.mapToSeqLevel(level);
+    
     return {
       timestamp: new Date().toISOString(),
-      level,
+      level: seqLevel,
       message,
       properties,
       exception: exception ? this.formatException(exception) : undefined,
@@ -173,6 +194,17 @@ class Logger {
       userAgent: navigator.userAgent,
       url: window.location.href,
     };
+  }
+
+  private mapToSeqLevel(level: string): string {
+    const levelMap: Record<string, string> = {
+      'debug': 'Debug',
+      'info': 'Information',
+      'warn': 'Warning',
+      'error': 'Error',
+      'fatal': 'Fatal'
+    };
+    return levelMap[level.toLowerCase()] || 'Information';
   }
 
   private formatException(error: Error): string {
