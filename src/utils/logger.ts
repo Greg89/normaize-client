@@ -120,8 +120,12 @@ class Logger {
       const seqUrl = this.seqUrl.endsWith('/') ? this.seqUrl.slice(0, -1) : this.seqUrl;
       const fullUrl = `${seqUrl}/api/events/raw`;
       
+      // Fix: Seq expects payload with Events array, not direct array
+      const payload = {
+        Events: [entry]
+      };
+      
       // Enhanced debugging - log the exact payload
-      const payload = [entry];
       ConsoleLogger.debug('Seq Request Details', {
         url: fullUrl,
         headers: { ...headers, 'X-Seq-ApiKey': headers['X-Seq-ApiKey'] ? '[REDACTED]' : 'NOT_SET' },
