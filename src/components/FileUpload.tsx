@@ -45,14 +45,6 @@ const FileUpload: React.FC<FileUploadProps> = ({
         `Uploaded on ${new Date().toLocaleString()}`
       );
       
-      // Debug: Log the response structure
-      console.log('🔍 Upload Response Debug:', {
-        result,
-        resultType: typeof result,
-        hasId: result && typeof result === 'object' && 'id' in result,
-        resultKeys: result ? Object.keys(result) : 'null/undefined'
-      });
-      
       // The ApiService now returns the correct structure
       const datasetId = result.id;
       
