@@ -1,7 +1,7 @@
 import { ConsoleLogger } from './consoleLogger';
 
 interface LogEntry {
-  timestamp: string;
+  Timestamp: string; // Required by Seq - PascalCase
   level: string;
   message: string;
   MessageTemplate: string; // Required by Seq - PascalCase
@@ -73,7 +73,7 @@ class Logger {
         sessionId: entry.sessionId,
         userId: entry.userId,
         environment: entry.environment,
-        timestamp: entry.timestamp,
+        timestamp: entry.Timestamp,
         _recursive: true
       });
       return;
@@ -87,7 +87,7 @@ class Logger {
         sessionId: entry.sessionId,
         userId: entry.userId,
         environment: entry.environment,
-        timestamp: entry.timestamp,
+        timestamp: entry.Timestamp,
         _loggingUrl: true
       });
       return;
@@ -102,7 +102,7 @@ class Logger {
         sessionId: entry.sessionId,
         userId: entry.userId,
         environment: entry.environment,
-        timestamp: entry.timestamp
+        timestamp: entry.Timestamp
       });
       return;
     }
@@ -187,7 +187,7 @@ class Logger {
     const seqLevel = this.mapToSeqLevel(level);
     
     return {
-      timestamp: new Date().toISOString(),
+      Timestamp: new Date().toISOString(),
       level: seqLevel,
       message,
       MessageTemplate: message, // Add required MessageTemplate property
