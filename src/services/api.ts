@@ -120,19 +120,6 @@ class ApiService {
 
     const result = await response.json();
     
-    // Debug: Log the raw response to understand the structure
-    // eslint-disable-next-line no-console
-    console.log('🔍 Upload Response Structure:', {
-      status: response.status,
-      result,
-      resultType: typeof result,
-      hasDataSetId: result && typeof result === 'object' && 'dataSetId' in result,
-      resultKeys: result ? Object.keys(result) : 'null/undefined',
-      dataSetIdValue: result?.dataSetId,
-      messageValue: result?.message,
-      successValue: result?.success
-    });
-    
     // Handle the actual backend response structure (camelCase)
     if (result && typeof result === 'object' && 'dataSetId' in result) {
       const transformed = {
@@ -140,14 +127,10 @@ class ApiService {
         message: result.message || '',
         success: result.success || false
       };
-      // eslint-disable-next-line no-console
-      console.log('✅ Response transformed successfully:', transformed);
       return transformed;
     }
     
     // Fallback for unexpected response structure
-    // eslint-disable-next-line no-console
-    console.error('❌ Unexpected response structure:', result);
     throw new Error('Unexpected response structure from server');
   }
 
