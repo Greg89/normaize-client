@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useRef } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { Upload, X, CheckCircle, AlertCircle, Loader } from 'lucide-react';
-import { useAuth } from '../hooks/useAuth';
+import { apiService } from '../services/api';
 
 interface FileUploadProps {
   onUploadSuccess: (datasetId: number, fileName: string) => void;
@@ -28,7 +28,6 @@ const FileUpload: React.FC<FileUploadProps> = ({
 }) => {
   const [uploads, setUploads] = useState<UploadProgress[]>([]);
   const abortControllerRef = useRef<AbortController | null>(null);
-  const { getToken } = useAuth();
 
   const uploadFile = useCallback(async (file: File, uploadIndex: number) => {
     const formData = new FormData();
@@ -39,36 +38,27 @@ const FileUpload: React.FC<FileUploadProps> = ({
     abortControllerRef.current = new AbortController();
 
     try {
-      const token = await getToken();
-      const headers: Record<string, string> = {};
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-
-      const response = await fetch('/api/datasets/upload', {
-        method: 'POST',
-        body: formData,
-        signal: abortControllerRef.current.signal,
-        headers
-      });
-
-      if (!response.ok) {
-        throw new Error(`Upload failed: ${response.statusText}`);
-      }
-
-      const result = await response.json();
+      // Use ApiService instead of direct fetch to ensure correct base URL
+      const result = await apiService.uploadDataSet(
+        file, 
+        file.name.replace(/\.[^/.]+$/, ''), 
+        `Uploaded on ${new Date().toLocaleString()}`
+      );
       
-      if (result.success) {
-        setUploads(prev => prev.map((upload, index) => 
-          index === uploadIndex 
-            ? { ...upload, progress: 100, status: 'success', dataSetId: result.dataSetId }
-            : upload
-        ));
-        
-        onUploadSuccess(result.dataSetId, file.name);
-      } else {
-        throw new Error(result.message || 'Upload failed');
+      // The ApiService now returns the correct structure
+      const datasetId = result.id;
+      
+      if (!datasetId) {
+        throw new Error('Upload succeeded but no dataset ID returned from server');
       }
+      
+      setUploads(prev => prev.map((upload, index) => 
+        index === uploadIndex 
+          ? { ...upload, progress: 100, status: 'success', dataSetId: datasetId }
+          : upload
+      ));
+      
+      onUploadSuccess(datasetId, file.name);
     } catch (error) {
       if (error instanceof Error && error.name === 'AbortError') {
         return; // Upload was cancelled
@@ -82,7 +72,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
       
       onUploadError(error instanceof Error ? error.message : 'Upload failed');
     }
-  }, [getToken, onUploadSuccess, onUploadError]);
+  }, [onUploadSuccess, onUploadError]);
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     const newUploads = acceptedFiles.map(file => ({

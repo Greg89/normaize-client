@@ -1,9 +1,10 @@
 import { ConsoleLogger } from './consoleLogger';
 
 interface LogEntry {
-  timestamp: string;
+  Timestamp: string; // Required by Seq - PascalCase
   level: string;
   message: string;
+  MessageTemplate: string; // Required by Seq - PascalCase
   properties?: Record<string, unknown>;
   exception?: string;
   userId?: string;
@@ -30,9 +31,20 @@ class Logger {
     this.correlationId = this.generateCorrelationId();
     this.sessionId = this.generateSessionId();
     
+    // Enhanced initialization logging for debugging
+    ConsoleLogger.info('Logger initialization', {
+      hasSeqUrl: !!this.seqUrl,
+      hasApiKey: !!this.apiKey,
+      seqUrl: this.seqUrl || 'NOT_SET',
+      environment: this.environment,
+      origin: typeof window !== 'undefined' ? window.location.origin : 'SERVER_SIDE'
+    });
+    
     // Log initialization to console for debugging
     if (!this.seqUrl || !this.apiKey) {
       ConsoleLogger.info('Logger initialized without Seq configuration - using console logging only');
+    } else {
+      ConsoleLogger.info('Logger initialized with Seq configuration - will attempt to send logs to Seq');
     }
   }
 
@@ -61,7 +73,7 @@ class Logger {
         sessionId: entry.sessionId,
         userId: entry.userId,
         environment: entry.environment,
-        timestamp: entry.timestamp,
+        timestamp: entry.Timestamp,
         _recursive: true
       });
       return;
@@ -75,7 +87,7 @@ class Logger {
         sessionId: entry.sessionId,
         userId: entry.userId,
         environment: entry.environment,
-        timestamp: entry.timestamp,
+        timestamp: entry.Timestamp,
         _loggingUrl: true
       });
       return;
@@ -90,7 +102,7 @@ class Logger {
         sessionId: entry.sessionId,
         userId: entry.userId,
         environment: entry.environment,
-        timestamp: entry.timestamp
+        timestamp: entry.Timestamp
       });
       return;
     }
@@ -105,15 +117,61 @@ class Logger {
         headers['X-Seq-ApiKey'] = this.apiKey;
       }
 
-      await fetch(`${this.seqUrl}/api/events/raw`, {
+      // Fix URL construction to prevent double slashes
+      const seqUrl = this.seqUrl.endsWith('/') ? this.seqUrl.slice(0, -1) : this.seqUrl;
+      const fullUrl = `${seqUrl}/api/events/raw`;
+      
+      // Fix: Seq expects payload with Events array, not direct array
+      const payload = {
+        Events: [entry]
+      };
+      
+      // Enhanced debugging - log the exact payload
+      ConsoleLogger.debug('Seq Request Details', {
+        url: fullUrl,
+        headers: { ...headers, 'X-Seq-ApiKey': headers['X-Seq-ApiKey'] ? '[REDACTED]' : 'NOT_SET' },
+        payload: JSON.stringify(payload, null, 2),
+        payloadSize: JSON.stringify(payload).length,
+        hasApiKey: !!this.apiKey,
+        origin: window.location.origin
+      });
+
+      // Validate JSON structure
+      try {
+        JSON.stringify(payload);
+      } catch (jsonError) {
+        throw new Error(`Invalid JSON structure: ${jsonError}`);
+      }
+
+      // Check payload size
+      const payloadString = JSON.stringify(payload);
+      if (payloadString.length > 1000000) { // 1MB limit
+        throw new Error(`Payload too large: ${payloadString.length} bytes`);
+      }
+
+      const response = await fetch(fullUrl, {
         method: 'POST',
         headers,
-        body: JSON.stringify([entry]),
+        body: payloadString,
       });
+
+      if (!response.ok) {
+        // Get response body for better error details
+        const errorText = await response.text();
+        throw new Error(`Seq responded with status ${response.status}: ${response.statusText}. Response: ${errorText}`);
+      }
     } catch (error) {
-      // Fallback to console if Seq is unavailable
-      ConsoleLogger.error('Failed to send log to Seq:', { error: String(error) });
-      ConsoleLogger.info('Original log entry:', entry as unknown as Record<string, unknown>);
+      // Enhanced error logging for CORS and other issues
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      ConsoleLogger.error('Failed to send log to Seq:', { 
+        error: errorMessage,
+        seqUrl: this.seqUrl,
+        origin: window.location.origin,
+        userAgent: navigator.userAgent
+      });
+      
+      // Log the original entry to console as fallback
+      ConsoleLogger.info('Original log entry (fallback):', entry as unknown as Record<string, unknown>);
     } finally {
       this.isLogging = false;
     }
@@ -125,10 +183,14 @@ class Logger {
     properties?: Record<string, unknown>,
     exception?: Error
   ): LogEntry {
+    // Map log levels to Seq format
+    const seqLevel = this.mapToSeqLevel(level);
+    
     return {
-      timestamp: new Date().toISOString(),
-      level,
+      Timestamp: new Date().toISOString(),
+      level: seqLevel,
       message,
+      MessageTemplate: message, // Add required MessageTemplate property
       properties,
       exception: exception ? this.formatException(exception) : undefined,
       userId: this.userId,
@@ -138,6 +200,17 @@ class Logger {
       userAgent: navigator.userAgent,
       url: window.location.href,
     };
+  }
+
+  private mapToSeqLevel(level: string): string {
+    const levelMap: Record<string, string> = {
+      'debug': 'Debug',
+      'info': 'Information',
+      'warn': 'Warning',
+      'error': 'Error',
+      'fatal': 'Fatal'
+    };
+    return levelMap[level.toLowerCase()] || 'Information';
   }
 
   private formatException(error: Error): string {

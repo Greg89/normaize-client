@@ -1,4 +1,4 @@
-import { ApiResponse, DataSet, Analysis } from '../types';
+import { ApiResponse, DataSet, Analysis, DataSetUploadResponse } from '../types';
 import { API_CONFIG } from '../utils/constants';
 import { logger } from '../utils/logger';
 
@@ -89,7 +89,7 @@ class ApiService {
     }
   }
 
-  async uploadDataSet(file: File, name: string, description?: string): Promise<DataSet> {
+  async uploadDataSet(file: File, name: string, description?: string): Promise<DataSetUploadResponse> {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('name', name);
@@ -119,7 +119,19 @@ class ApiService {
     }
 
     const result = await response.json();
-    return result.data;
+    
+    // Handle the actual backend response structure (camelCase)
+    if (result && typeof result === 'object' && 'dataSetId' in result) {
+      const transformed = {
+        id: result.dataSetId,
+        message: result.message || '',
+        success: result.success || false
+      };
+      return transformed;
+    }
+    
+    // Fallback for unexpected response structure
+    throw new Error('Unexpected response structure from server');
   }
 
   async deleteDataSet(id: number): Promise<void> {
