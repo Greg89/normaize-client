@@ -126,19 +126,19 @@ class ApiService {
       status: response.status,
       result,
       resultType: typeof result,
-      hasDataSetId: result && typeof result === 'object' && 'DataSetId' in result,
+      hasDataSetId: result && typeof result === 'object' && 'dataSetId' in result,
       resultKeys: result ? Object.keys(result) : 'null/undefined',
-      dataSetIdValue: result?.DataSetId,
-      messageValue: result?.Message,
-      successValue: result?.Success
+      dataSetIdValue: result?.dataSetId,
+      messageValue: result?.message,
+      successValue: result?.success
     });
     
-    // Handle the actual backend response structure
-    if (result && typeof result === 'object' && 'DataSetId' in result) {
+    // Handle the actual backend response structure (camelCase)
+    if (result && typeof result === 'object' && 'dataSetId' in result) {
       const transformed = {
-        id: result.DataSetId,
-        message: result.Message || '',
-        success: result.Success || false
+        id: result.dataSetId,
+        message: result.message || '',
+        success: result.success || false
       };
       // eslint-disable-next-line no-console
       console.log('✅ Response transformed successfully:', transformed);
