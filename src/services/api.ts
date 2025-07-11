@@ -120,16 +120,34 @@ class ApiService {
 
     const result = await response.json();
     
+    // Debug: Log the raw response to understand the structure
+    // eslint-disable-next-line no-console
+    console.log('🔍 Upload Response Structure:', {
+      status: response.status,
+      result,
+      resultType: typeof result,
+      hasDataSetId: result && typeof result === 'object' && 'DataSetId' in result,
+      resultKeys: result ? Object.keys(result) : 'null/undefined',
+      dataSetIdValue: result?.DataSetId,
+      messageValue: result?.Message,
+      successValue: result?.Success
+    });
+    
     // Handle the actual backend response structure
     if (result && typeof result === 'object' && 'DataSetId' in result) {
-      return {
+      const transformed = {
         id: result.DataSetId,
         message: result.Message || '',
         success: result.Success || false
       };
+      // eslint-disable-next-line no-console
+      console.log('✅ Response transformed successfully:', transformed);
+      return transformed;
     }
     
     // Fallback for unexpected response structure
+    // eslint-disable-next-line no-console
+    console.error('❌ Unexpected response structure:', result);
     throw new Error('Unexpected response structure from server');
   }
 

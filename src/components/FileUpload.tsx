@@ -45,12 +45,18 @@ const FileUpload: React.FC<FileUploadProps> = ({
         `Uploaded on ${new Date().toLocaleString()}`
       );
       
+      // eslint-disable-next-line no-console
+      console.log('🔍 FileUpload received result:', result);
+      
       // The ApiService now returns the correct structure
       const datasetId = result.id;
       
       if (!datasetId) {
         throw new Error('Upload succeeded but no dataset ID returned from server');
       }
+      
+      // eslint-disable-next-line no-console
+      console.log('✅ Upload successful, dataset ID:', datasetId);
       
       setUploads(prev => prev.map((upload, index) => 
         index === uploadIndex 
