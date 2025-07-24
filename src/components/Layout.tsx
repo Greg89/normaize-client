@@ -1,4 +1,4 @@
-import { ReactNode } from 'react'
+import { ReactNode, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { 
   HomeIcon, 
@@ -6,7 +6,8 @@ import {
   ChartBarIcon, 
   ChartPieIcon,
   UserCircleIcon,
-  MagnifyingGlassIcon
+  MagnifyingGlassIcon,
+  Cog6ToothIcon
 } from '@heroicons/react/24/outline'
 import { useAuth } from '../hooks/useAuth'
 
@@ -24,10 +25,22 @@ const navigation = [
 export default function Layout({ children }: LayoutProps) {
   const location = useLocation()
   const { user, logout } = useAuth()
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false)
 
   const handleSearch = (query: string) => {
     // TODO: Implement search functionality
     console.log('Searching for:', query)
+  }
+
+  const handleAccountSettings = () => {
+    // TODO: Navigate to account settings page
+    console.log('Navigate to account settings')
+    setIsDropdownOpen(false)
+  }
+
+  const handleLogout = () => {
+    logout()
+    setIsDropdownOpen(false)
   }
 
   return (
@@ -55,14 +68,34 @@ export default function Layout({ children }: LayoutProps) {
             <div className="flex items-center space-x-4">
               {user && (
                 <div className="flex items-center space-x-2">
-                  <UserCircleIcon className="h-6 w-6 text-gray-400" />
                   <span className="text-sm text-gray-700">{user.name || user.email}</span>
-                  <button
-                    onClick={logout}
-                    className="text-sm text-gray-500 hover:text-gray-700"
-                  >
-                    Logout
-                  </button>
+                  
+                  {/* Settings Dropdown */}
+                  <div className="relative">
+                    <button
+                      onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                      className="p-1 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    >
+                      <Cog6ToothIcon className="h-5 w-5" />
+                    </button>
+                    
+                    {isDropdownOpen && (
+                      <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-200">
+                        <button
+                          onClick={handleAccountSettings}
+                          className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 focus:outline-none"
+                        >
+                          Account Settings
+                        </button>
+                        <button
+                          onClick={handleLogout}
+                          className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 focus:outline-none"
+                        >
+                          Logout
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
