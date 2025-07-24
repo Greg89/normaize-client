@@ -1,5 +1,5 @@
 import { ReactNode, useState, useEffect, useRef } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { 
   HomeIcon, 
   DocumentTextIcon, 
@@ -23,6 +23,7 @@ const navigation = [
 
 export default function Layout({ children }: LayoutProps) {
   const location = useLocation()
+  const navigate = useNavigate()
   const { user, logout } = useAuth()
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
@@ -33,8 +34,7 @@ export default function Layout({ children }: LayoutProps) {
   }
 
   const handleAccountSettings = () => {
-    // TODO: Navigate to account settings page
-    console.log('Navigate to account settings')
+    navigate('/account')
     setIsDropdownOpen(false)
   }
 
