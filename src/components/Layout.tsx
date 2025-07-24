@@ -1,11 +1,10 @@
-import { ReactNode, useState } from 'react'
+import { ReactNode, useState, useEffect, useRef } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { 
   HomeIcon, 
   DocumentTextIcon, 
   ChartBarIcon, 
   ChartPieIcon,
-  UserCircleIcon,
   MagnifyingGlassIcon,
   Cog6ToothIcon
 } from '@heroicons/react/24/outline'
@@ -26,6 +25,7 @@ export default function Layout({ children }: LayoutProps) {
   const location = useLocation()
   const { user, logout } = useAuth()
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
+  const dropdownRef = useRef<HTMLDivElement>(null)
 
   const handleSearch = (query: string) => {
     // TODO: Implement search functionality
@@ -42,6 +42,23 @@ export default function Layout({ children }: LayoutProps) {
     logout()
     setIsDropdownOpen(false)
   }
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false)
+      }
+    }
+
+    if (isDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [isDropdownOpen])
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -71,7 +88,7 @@ export default function Layout({ children }: LayoutProps) {
                   <span className="text-sm text-gray-700">{user.name || user.email}</span>
                   
                   {/* Settings Dropdown */}
-                  <div className="relative">
+                  <div className="relative" ref={dropdownRef}>
                     <button
                       onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                       className="p-1 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
