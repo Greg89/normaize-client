@@ -23,6 +23,19 @@ interface UserPreferences {
   language: string
 }
 
+// Preset avatar options - you can replace these with your actual avatar images
+const avatarOptions = [
+  { id: 'default', url: '/avatars/default.png', name: 'Default' },
+  { id: 'avatar1', url: '/avatars/avatar1.png', name: 'Avatar 1' },
+  { id: 'avatar2', url: '/avatars/avatar2.png', name: 'Avatar 2' },
+  { id: 'avatar3', url: '/avatars/avatar3.png', name: 'Avatar 3' },
+  { id: 'avatar4', url: '/avatars/avatar4.png', name: 'Avatar 4' },
+  { id: 'avatar5', url: '/avatars/avatar5.png', name: 'Avatar 5' },
+  { id: 'avatar6', url: '/avatars/avatar6.png', name: 'Avatar 6' },
+  { id: 'avatar7', url: '/avatars/avatar7.png', name: 'Avatar 7' },
+  { id: 'avatar8', url: '/avatars/avatar8.png', name: 'Avatar 8' },
+]
+
 export default function AccountSettings() {
   const { user } = useAuth()
   const [activeTab, setActiveTab] = useState('profile')
@@ -31,7 +44,7 @@ export default function AccountSettings() {
   const [profile, setProfile] = useState<UserProfile>({
     name: user?.name || '',
     email: user?.email || '',
-    avatar: user?.picture || ''
+    avatar: user?.picture || avatarOptions[0].url
   })
 
   const [preferences, setPreferences] = useState<UserPreferences>({
@@ -83,6 +96,10 @@ export default function AccountSettings() {
         [key]: value
       }
     }))
+  }
+
+  const handleAvatarSelect = (avatarUrl: string) => {
+    setProfile(prev => ({ ...prev, avatar: avatarUrl }))
   }
 
   return (
@@ -157,17 +174,49 @@ export default function AccountSettings() {
               </div>
 
               <div>
-                <label htmlFor="avatar" className="block text-sm font-medium text-gray-700">
-                  Profile Picture URL
+                <label className="block text-sm font-medium text-gray-700 mb-3">
+                  Profile Picture
                 </label>
-                <input
-                  type="url"
-                  id="avatar"
-                  value={profile.avatar || ''}
-                  onChange={(e) => setProfile(prev => ({ ...prev, avatar: e.target.value }))}
-                  className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500"
-                  placeholder="https://example.com/avatar.jpg"
-                />
+                <div className="grid grid-cols-3 gap-4 sm:grid-cols-4 md:grid-cols-5">
+                  {avatarOptions.map((avatar) => (
+                    <button
+                      key={avatar.id}
+                      onClick={() => handleAvatarSelect(avatar.url)}
+                      className={`relative p-2 rounded-lg border-2 transition-all hover:scale-105 ${
+                        profile.avatar === avatar.url
+                          ? 'border-primary-500 bg-primary-50'
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <div className="w-full aspect-square rounded-full overflow-hidden bg-gray-100 flex items-center justify-center">
+                        {avatar.url ? (
+                          <img
+                            src={avatar.url}
+                            alt={avatar.name}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              // Fallback to default avatar if image fails to load
+                              const target = e.target as HTMLImageElement
+                              target.src = '/avatars/default.png'
+                            }}
+                          />
+                        ) : (
+                          <UserIcon className="w-8 h-8 text-gray-400" />
+                        )}
+                      </div>
+                      {profile.avatar === avatar.url && (
+                        <div className="absolute -top-1 -right-1 w-5 h-5 bg-primary-500 rounded-full flex items-center justify-center">
+                          <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                        </div>
+                      )}
+                    </button>
+                  ))}
+                </div>
+                <p className="mt-2 text-sm text-gray-500">
+                  Click on an avatar to select it as your profile picture
+                </p>
               </div>
             </div>
           </div>
