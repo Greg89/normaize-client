@@ -1,5 +1,5 @@
 import { Auth0Provider, useAuth0 } from '@auth0/auth0-react';
-import React, { ReactNode, useEffect } from 'react';
+import React, { ReactNode, useEffect, useCallback } from 'react';
 import { auth0Config } from '../utils/auth0-config';
 import { setSentryUser, clearSentryUser } from '../utils/sentry';
 import { logger } from '../utils/logger';
@@ -58,19 +58,7 @@ const SentryUserManager: React.FC<{ children: ReactNode }> = ({ children }) => {
 const TokenValidator: React.FC<{ children: ReactNode }> = ({ children }) => {
   const { isAuthenticated, isLoading, error, getAccessTokenSilently } = useAuth0();
 
-  useEffect(() => {
-    if (isAuthenticated && !isLoading) {
-      // Validate token on mount and set up periodic validation
-      validateToken();
-      
-      // Set up periodic token validation (every 5 minutes)
-      const interval = setInterval(validateToken, 5 * 60 * 1000);
-      
-      return () => clearInterval(interval);
-    }
-  }, [isAuthenticated, isLoading]);
-
-  const validateToken = async () => {
+  const validateToken = useCallback(async () => {
     try {
       await getAccessTokenSilently({ 
         detailedResponse: true,
@@ -81,7 +69,19 @@ const TokenValidator: React.FC<{ children: ReactNode }> = ({ children }) => {
       logger.error('Token validation failed during periodic check', { error });
       // The useAuth hook will handle the re-authentication
     }
-  };
+  }, [getAccessTokenSilently]);
+
+  useEffect(() => {
+    if (isAuthenticated && !isLoading) {
+      // Validate token on mount and set up periodic validation
+      validateToken();
+      
+      // Set up periodic token validation (every 5 minutes)
+      const interval = setInterval(validateToken, 5 * 60 * 1000);
+      
+      return () => clearInterval(interval);
+    }
+  }, [isAuthenticated, isLoading, validateToken]);
 
   // Show error message if there's an authentication error
   if (error) {

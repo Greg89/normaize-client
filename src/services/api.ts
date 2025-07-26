@@ -7,8 +7,8 @@ class ApiService {
   private getToken?: () => Promise<string | null>;
   private isRefreshing = false;
   private failedQueue: Array<{
-    resolve: (value: any) => void;
-    reject: (error: any) => void;
+    resolve: (value: unknown) => void;
+    reject: (error: unknown) => void;
   }> = [];
 
   constructor() {
@@ -19,7 +19,7 @@ class ApiService {
     this.getToken = getToken;
   }
 
-  private processQueue(error: any, token: string | null = null) {
+  private processQueue(error: unknown, token: string | null = null) {
     this.failedQueue.forEach(({ resolve, reject }) => {
       if (error) {
         reject(error);

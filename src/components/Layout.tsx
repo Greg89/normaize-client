@@ -30,6 +30,7 @@ export default function Layout({ children }: LayoutProps) {
 
   const handleSearch = (query: string) => {
     // TODO: Implement search functionality
+    // eslint-disable-next-line no-console
     console.log('Searching for:', query)
   }
 

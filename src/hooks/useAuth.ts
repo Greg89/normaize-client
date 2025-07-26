@@ -15,12 +15,26 @@ export const useAuth = () => {
 
   const [tokenValidationError, setTokenValidationError] = useState<string | null>(null);
 
-  // Validate token on mount and when authentication state changes
-  useEffect(() => {
-    if (isAuthenticated && !isLoading) {
-      validateToken();
-    }
-  }, [isAuthenticated, isLoading]);
+  const login = useCallback(async () => {
+    await loginWithRedirect();
+  }, [loginWithRedirect]);
+
+  const logoutUser = useCallback(async () => {
+    logout({
+      logoutParams: {
+        returnTo: window.location.origin,
+      },
+    });
+  }, [logout]);
+
+  const forceReAuth = useCallback(async () => {
+    logger.info('Forcing re-authentication due to token issues');
+    logout({
+      logoutParams: {
+        returnTo: window.location.origin,
+      },
+    });
+  }, [logout]);
 
   const validateToken = useCallback(async () => {
     try {
@@ -43,28 +57,7 @@ export const useAuth = () => {
         await forceReAuth();
       }
     }
-  }, [getAccessTokenSilently]);
-
-  const login = useCallback(async () => {
-    await loginWithRedirect();
-  }, [loginWithRedirect]);
-
-  const logoutUser = useCallback(async () => {
-    logout({
-      logoutParams: {
-        returnTo: window.location.origin,
-      },
-    });
-  }, [logout]);
-
-  const forceReAuth = useCallback(async () => {
-    logger.info('Forcing re-authentication due to token issues');
-    logout({
-      logoutParams: {
-        returnTo: window.location.origin,
-      },
-    });
-  }, [logout]);
+  }, [getAccessTokenSilently, forceReAuth]);
 
   const getToken = useCallback(async () => {
     try {
@@ -73,12 +66,18 @@ export const useAuth = () => {
         timeoutInSeconds: 10
       });
       
-      // If we get a detailed response, extract the access token
-      if (typeof token === 'object' && 'access_token' in token) {
-        return token.access_token;
+      // Handle both string and object responses
+      if (typeof token === 'string') {
+        return token;
       }
       
-      return token as string;
+      // If it's an object with access_token property
+      if (token && typeof token === 'object' && 'access_token' in token) {
+        const tokenResponse = token as { access_token: string };
+        return tokenResponse.access_token;
+      }
+      
+      return null;
     } catch (error) {
       logger.error('Failed to get access token', { error });
       
@@ -110,6 +109,13 @@ export const useAuth = () => {
       return null;
     }
   }, [getAccessTokenSilently, forceReAuth]);
+
+  // Validate token on mount and when authentication state changes
+  useEffect(() => {
+    if (isAuthenticated && !isLoading) {
+      validateToken();
+    }
+  }, [isAuthenticated, isLoading, validateToken]);
 
   return {
     isAuthenticated,

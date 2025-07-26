@@ -69,19 +69,22 @@ export default function AccountSettings() {
     
     try {
       // TODO: Implement save API call for all settings
+      // eslint-disable-next-line no-console
       console.log('Saving all settings:', { profile, preferences })
       await new Promise(resolve => setTimeout(resolve, 1000)) // Simulate API call
       
       // Show success message
+      // eslint-disable-next-line no-console
       console.log('Settings saved successfully')
     } catch (error) {
+      // eslint-disable-next-line no-console
       console.error('Failed to save settings:', error)
     } finally {
       setIsLoading(false)
     }
   }
 
-  const handlePreferenceChange = (key: keyof UserPreferences, value: any) => {
+  const handlePreferenceChange = (key: keyof UserPreferences, value: string | boolean) => {
     setPreferences(prev => ({
       ...prev,
       [key]: value
