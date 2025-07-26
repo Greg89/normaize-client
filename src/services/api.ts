@@ -6,10 +6,6 @@ class ApiService {
   private baseUrl: string;
   private getToken?: () => Promise<string | null>;
   private isRefreshing = false;
-  private failedQueue: Array<{
-    resolve: (value: unknown) => void;
-    reject: (error: unknown) => void;
-  }> = [];
 
   constructor() {
     this.baseUrl = API_CONFIG.BASE_URL;
@@ -19,17 +15,7 @@ class ApiService {
     this.getToken = getToken;
   }
 
-  private processQueue(error: unknown, token: string | null = null) {
-    this.failedQueue.forEach(({ resolve, reject }) => {
-      if (error) {
-        reject(error);
-      } else {
-        resolve(token);
-      }
-    });
-    
-    this.failedQueue = [];
-  }
+
 
   private async request<T>(endpoint: string, options: RequestInit = {}): Promise<ApiResponse<T>> {
     const url = `${this.baseUrl}${endpoint}`;

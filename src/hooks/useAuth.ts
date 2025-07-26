@@ -96,7 +96,7 @@ export const useAuth = () => {
           });
           
           if (typeof newToken === 'object' && 'access_token' in newToken) {
-            return newToken.access_token;
+            return (newToken as { access_token: string }).access_token;
           }
           
           return newToken as string;
