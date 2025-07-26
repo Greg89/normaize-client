@@ -71,4 +71,31 @@ export function useAnalyses() {
 export function useAnalysis(id: number) {
   const apiCall = useCallback(() => apiService.getAnalysis(id), [id]);
   return useApi(apiCall, [id]);
+}
+
+export function useDeleteDataSet() {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const deleteDataSet = useCallback(async (id: number): Promise<boolean> => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      await apiService.deleteDataSet(id);
+      setLoading(false);
+      return true;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to delete dataset';
+      setError(errorMessage);
+      setLoading(false);
+      return false;
+    }
+  }, []);
+
+  return {
+    deleteDataSet,
+    loading,
+    error,
+  };
 } 

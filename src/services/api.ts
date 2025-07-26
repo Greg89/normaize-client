@@ -62,6 +62,11 @@ class ApiService {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       
+      // Handle 204 No Content responses (no body to parse)
+      if (response.status === 204) {
+        return {} as ApiResponse<T>;
+      }
+      
       const data = await response.json();
       return data;
     } catch (error) {
