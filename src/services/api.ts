@@ -5,6 +5,11 @@ import { logger } from '../utils/logger';
 class ApiService {
   private baseUrl: string;
   private getToken?: () => Promise<string | null>;
+  private isRefreshing = false;
+  private failedQueue: Array<{
+    resolve: (value: any) => void;
+    reject: (error: any) => void;
+  }> = [];
 
   constructor() {
     this.baseUrl = API_CONFIG.BASE_URL;
@@ -12,6 +17,18 @@ class ApiService {
 
   setTokenGetter(getToken: () => Promise<string | null>) {
     this.getToken = getToken;
+  }
+
+  private processQueue(error: any, token: string | null = null) {
+    this.failedQueue.forEach(({ resolve, reject }) => {
+      if (error) {
+        reject(error);
+      } else {
+        resolve(token);
+      }
+    });
+    
+    this.failedQueue = [];
   }
 
   private async request<T>(endpoint: string, options: RequestInit = {}): Promise<ApiResponse<T>> {
@@ -51,6 +68,60 @@ class ApiService {
         response.status,
         duration
       );
+
+      // Handle 401 Unauthorized - try to refresh token and retry
+      if (response.status === 401 && this.getToken && !this.isRefreshing) {
+        this.isRefreshing = true;
+        
+        try {
+          // Try to get a fresh token
+          const newToken = await this.getToken();
+          this.isRefreshing = false;
+          
+          if (newToken) {
+            // Retry the request with the new token
+            headers['Authorization'] = `Bearer ${newToken}`;
+            const retryConfig: RequestInit = {
+              ...config,
+              headers,
+            };
+            
+            const retryResponse = await fetch(url, retryConfig);
+            const retryDuration = Date.now() - startTime;
+            
+            // Log the retry
+            await logger.trackApiCall(
+              options.method || 'GET',
+              url,
+              retryResponse.status,
+              retryDuration
+            );
+            
+            if (!retryResponse.ok) {
+              await logger.error(`API retry failed: ${retryResponse.status} ${retryResponse.statusText}`, {
+                url,
+                method: options.method || 'GET',
+                status: retryResponse.status,
+                duration: retryDuration,
+                retry: true,
+              });
+              throw new Error(`HTTP error! status: ${retryResponse.status}`);
+            }
+            
+            // Handle 204 No Content responses (no body to parse)
+            if (retryResponse.status === 204) {
+              return {} as ApiResponse<T>;
+            }
+            
+            const data = await retryResponse.json();
+            return data;
+          }
+        } catch (refreshError) {
+          this.isRefreshing = false;
+          await logger.error('Token refresh failed', { refreshError });
+          // Continue to throw the original 401 error
+        }
+      }
 
       if (!response.ok) {
         await logger.error(`API request failed: ${response.status} ${response.statusText}`, {
