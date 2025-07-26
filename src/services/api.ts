@@ -43,60 +43,10 @@ class ApiService {
       ...options,
     };
 
-    // Debug request configuration for beta
-    const isBeta = import.meta.env.VITE_APP_ENV === 'beta' || window.location.hostname.includes('beta');
-    if (isBeta) {
-      // eslint-disable-next-line no-console
-      console.log('📤 Request Debug Info:', {
-        url,
-        method: options.method || 'GET',
-        headers,
-        hasToken: !!headers['Authorization'],
-        timestamp: new Date().toISOString()
-      });
-    }
-
     try {
       const response = await fetch(url, config);
       const duration = Date.now() - startTime;
       
-      // Enhanced debugging for beta environment
-      const isBeta = import.meta.env.VITE_APP_ENV === 'beta' || window.location.hostname.includes('beta');
-      if (isBeta) {
-        // eslint-disable-next-line no-console
-        console.log('🔍 API Debug Info:', {
-          url,
-          method: options.method || 'GET',
-          status: response.status,
-          statusText: response.statusText,
-          headers: Object.fromEntries(response.headers.entries()),
-          duration,
-          timestamp: new Date().toISOString(),
-          // Additional debugging
-          responseType: response.type,
-          responseUrl: response.url,
-          redirected: response.redirected,
-          bodyUsed: response.bodyUsed
-        });
-        
-        // Log the actual response body for debugging
-        if (response.status !== 204) {
-          const responseClone = response.clone();
-          responseClone.text().then(text => {
-            // eslint-disable-next-line no-console
-            console.log('📄 Response Body:', {
-              url,
-              status: response.status,
-              body: text.substring(0, 500) + (text.length > 500 ? '...' : ''),
-              bodyLength: text.length
-            });
-          }).catch(err => {
-            // eslint-disable-next-line no-console
-            console.warn('Could not read response body:', err);
-          });
-        }
-      }
-
       // Log the API call
       try {
         await logger.trackApiCall(
@@ -195,13 +145,6 @@ class ApiService {
 
   // DataSet endpoints
   async getDataSets(): Promise<DataSet[]> {
-    // Debug: Test if the issue is specific to this endpoint
-    const isBeta = import.meta.env.VITE_APP_ENV === 'beta' || window.location.hostname.includes('beta');
-    if (isBeta) {
-      // eslint-disable-next-line no-console
-      console.log('🔍 Testing datasets endpoint...');
-    }
-    
     const response = await this.request<DataSet[]>('/api/datasets');
     
     // Handle both response formats

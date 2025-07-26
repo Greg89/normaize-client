@@ -1,25 +1,6 @@
 // API Configuration
 export const API_CONFIG = {
-  BASE_URL: (() => {
-    const isDev = import.meta.env.DEV;
-    const apiUrl = import.meta.env.VITE_API_URL;
-    const fallback = 'http://localhost:5000';
-    
-    // Debug logging for beta environment
-    if (!isDev) {
-      // eslint-disable-next-line no-console
-      console.log('🔧 API Config Debug:', {
-        isDev,
-        apiUrl,
-        fallback,
-        finalUrl: isDev ? '' : (apiUrl || fallback),
-        hostname: window.location.hostname,
-        origin: window.location.origin
-      });
-    }
-    
-    return isDev ? '' : (apiUrl || fallback);
-  })(),
+  BASE_URL: import.meta.env.VITE_API_URL || 'http://localhost:5000',
   TIMEOUT: 30000, // 30 seconds
   RETRY_ATTEMPTS: 3,
 } as const;
