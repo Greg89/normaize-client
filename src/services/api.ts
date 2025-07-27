@@ -5,6 +5,7 @@ import { logger } from '../utils/logger';
 class ApiService {
   private baseUrl: string;
   private getToken?: () => Promise<string | null>;
+  private isRefreshing = false;
 
   constructor() {
     this.baseUrl = API_CONFIG.BASE_URL;
@@ -13,6 +14,8 @@ class ApiService {
   setTokenGetter(getToken: () => Promise<string | null>) {
     this.getToken = getToken;
   }
+
+
 
   private async request<T>(endpoint: string, options: RequestInit = {}): Promise<ApiResponse<T>> {
     const url = `${this.baseUrl}${endpoint}`;
@@ -45,12 +48,72 @@ class ApiService {
       const duration = Date.now() - startTime;
       
       // Log the API call
-      await logger.trackApiCall(
-        options.method || 'GET',
-        url,
-        response.status,
-        duration
-      );
+      try {
+        await logger.trackApiCall(
+          options.method || 'GET',
+          url,
+          response.status,
+          duration
+        );
+      } catch (loggingError) {
+        // Prevent logging errors from breaking the API call
+        // eslint-disable-next-line no-console
+        console.warn('Logging failed for API call:', loggingError);
+      }
+
+      // Handle 401 Unauthorized - try to refresh token and retry
+      if (response.status === 401 && this.getToken && !this.isRefreshing) {
+        this.isRefreshing = true;
+        
+        try {
+          // Try to get a fresh token
+          const newToken = await this.getToken();
+          this.isRefreshing = false;
+          
+          if (newToken) {
+            // Retry the request with the new token
+            headers['Authorization'] = `Bearer ${newToken}`;
+            const retryConfig: RequestInit = {
+              ...config,
+              headers,
+            };
+            
+            const retryResponse = await fetch(url, retryConfig);
+            const retryDuration = Date.now() - startTime;
+            
+            // Log the retry
+            await logger.trackApiCall(
+              options.method || 'GET',
+              url,
+              retryResponse.status,
+              retryDuration
+            );
+            
+            if (!retryResponse.ok) {
+              await logger.error(`API retry failed: ${retryResponse.status} ${retryResponse.statusText}`, {
+                url,
+                method: options.method || 'GET',
+                status: retryResponse.status,
+                duration: retryDuration,
+                retry: true,
+              });
+              throw new Error(`HTTP error! status: ${retryResponse.status}`);
+            }
+            
+            // Handle 204 No Content responses (no body to parse)
+            if (retryResponse.status === 204) {
+              return {} as ApiResponse<T>;
+            }
+            
+            const data = await retryResponse.json();
+            return data;
+          }
+        } catch (refreshError) {
+          this.isRefreshing = false;
+          await logger.error('Token refresh failed', { refreshError });
+          // Continue to throw the original 401 error
+        }
+      }
 
       if (!response.ok) {
         await logger.error(`API request failed: ${response.status} ${response.statusText}`, {
@@ -60,6 +123,11 @@ class ApiService {
           duration,
         });
         throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      // Handle 204 No Content responses (no body to parse)
+      if (response.status === 204) {
+        return {} as ApiResponse<T>;
       }
       
       const data = await response.json();

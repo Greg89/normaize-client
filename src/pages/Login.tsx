@@ -24,7 +24,7 @@ const Login = () => {
               Authentication Error
             </h2>
             <p className="mt-2 text-center text-sm text-red-600">
-              {error.message}
+              {error instanceof Error ? error.message : String(error)}
             </p>
           </div>
           <div className="mt-8 space-y-6">

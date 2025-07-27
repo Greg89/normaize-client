@@ -1,17 +1,18 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import FileUpload from '../components/FileUpload';
-import { useDataSets } from '../hooks/useApi';
+import { useDataSets, useDeleteDataSet } from '../hooks/useApi';
 import { DataSet } from '../types';
 import { logger } from '../utils/logger';
 
 export default function DataSets() {
   const { data: datasets, loading, error, refetch } = useDataSets();
+  const { deleteDataSet, loading: deleteLoading } = useDeleteDataSet();
   const [showUpload, setShowUpload] = useState(false);
   const [searchParams] = useSearchParams();
-
-
+  const [openDropdown, setOpenDropdown] = useState<number | null>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     // Check if we should show upload interface from query parameter
@@ -19,6 +20,23 @@ export default function DataSets() {
       setShowUpload(true);
     }
   }, [searchParams]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setOpenDropdown(null);
+      }
+    };
+
+    if (openDropdown !== null) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [openDropdown]);
 
   const handleUploadSuccess = (_datasetId: number, _fileName: string) => {
     // Refresh the datasets list after successful upload
@@ -32,6 +50,31 @@ export default function DataSets() {
       duration: 5000,
       position: 'top-right',
     });
+  };
+
+  const handleDeleteDataset = async (dataset: DataSet) => {
+    const confirmed = window.confirm(
+      `Are you sure you want to delete "${dataset.name}"? This action can be undone.`
+    );
+    
+    if (!confirmed) return;
+
+    try {
+      const success = await deleteDataSet(dataset.id);
+      if (success) {
+        toast.success(`Dataset "${dataset.name}" deleted successfully`);
+        refetch(); // Refresh the datasets list
+      } else {
+        toast.error('Failed to delete dataset');
+      }
+    } catch (error) {
+      logger.error('Delete dataset error', { error, datasetId: dataset.id });
+      toast.error('An error occurred while deleting the dataset');
+    }
+  };
+
+  const toggleDropdown = (datasetId: number) => {
+    setOpenDropdown(openDropdown === datasetId ? null : datasetId);
   };
 
   return (
@@ -119,11 +162,31 @@ export default function DataSets() {
                           Processed
                         </span>
                       )}
-                      <button className="text-gray-400 hover:text-gray-600">
-                        <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
-                        </svg>
-                      </button>
+                      <div className="relative">
+                        <button 
+                          onClick={() => toggleDropdown(dataset.id)}
+                          className="text-gray-400 hover:text-gray-600 p-1 rounded"
+                          disabled={deleteLoading}
+                        >
+                          <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                          </svg>
+                        </button>
+                        
+                        {openDropdown === dataset.id && (
+                          <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10 border border-gray-200" ref={dropdownRef}>
+                            <div className="py-1">
+                              <button
+                                onClick={() => handleDeleteDataset(dataset)}
+                                className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 hover:text-red-700"
+                                disabled={deleteLoading}
+                              >
+                                {deleteLoading ? 'Deleting...' : 'Delete Dataset'}
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>

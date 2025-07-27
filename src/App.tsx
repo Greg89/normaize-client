@@ -5,6 +5,7 @@ import DataSets from './pages/DataSets'
 import Analysis from './pages/Analysis'
 import Visualization from './pages/Visualization'
 import Login from './pages/Login'
+import AccountSettings from './pages/AccountSettings'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { ApiInitializer } from './components/ApiInitializer'
 import { SentryErrorBoundary } from './components/SentryErrorBoundary'
@@ -34,6 +35,11 @@ function App() {
             <Route path="/visualization" element={
               <ProtectedRoute>
                 <Visualization />
+              </ProtectedRoute>
+            } />
+            <Route path="/account" element={
+              <ProtectedRoute>
+                <AccountSettings />
               </ProtectedRoute>
             } />
           </Routes>
