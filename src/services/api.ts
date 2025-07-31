@@ -1,4 +1,4 @@
-import { ApiResponse, DataSet, Analysis, DataSetUploadResponse } from '../types';
+import { ApiResponse, PaginatedResponse, DataSet, Analysis, DataSetUploadResponse, UserProfileDto, UserSettingsDto } from '../types';
 import { API_CONFIG } from '../utils/constants';
 import { logger } from '../utils/logger';
 
@@ -15,7 +15,22 @@ class ApiService {
     this.getToken = getToken;
   }
 
-
+  /**
+   * Validates that the API response has the expected structure
+   */
+  private validateResponse<T>(response: ApiResponse<T>): void {
+    if (!response || typeof response !== 'object') {
+      throw new Error('Invalid response format: response is not an object');
+    }
+    
+    if (typeof response.success !== 'boolean') {
+      throw new Error('Invalid response format: success field is missing or not boolean');
+    }
+    
+    if (!response.success && response.errors && response.errors.length > 0) {
+      throw new Error(`API Error: ${response.errors.join(', ')}`);
+    }
+  }
 
   private async request<T>(endpoint: string, options: RequestInit = {}): Promise<ApiResponse<T>> {
     const url = `${this.baseUrl}${endpoint}`;
@@ -102,10 +117,15 @@ class ApiService {
             
             // Handle 204 No Content responses (no body to parse)
             if (retryResponse.status === 204) {
-              return {} as ApiResponse<T>;
+              return {
+                data: {} as T,
+                success: true,
+                message: 'Success'
+              };
             }
             
             const data = await retryResponse.json();
+            this.validateResponse(data);
             return data;
           }
         } catch (refreshError) {
@@ -127,10 +147,15 @@ class ApiService {
       
       // Handle 204 No Content responses (no body to parse)
       if (response.status === 204) {
-        return {} as ApiResponse<T>;
+        return {
+          data: {} as T,
+          success: true,
+          message: 'Success'
+        };
       }
       
       const data = await response.json();
+      this.validateResponse(data);
       return data;
     } catch (error) {
       const duration = Date.now() - startTime;
@@ -146,15 +171,12 @@ class ApiService {
   // DataSet endpoints
   async getDataSets(): Promise<DataSet[]> {
     const response = await this.request<DataSet[]>('/api/datasets');
-    
-    // Handle both response formats
-    if (Array.isArray(response)) {
-      return response; // Server returns array directly
-    } else if (response.data) {
-      return response.data; // Server returns { data: [...] }
-    } else {
-      return [];
-    }
+    return response.data;
+  }
+
+  async getDataSetsPaginated(page = 1, pageSize = 10): Promise<PaginatedResponse<DataSet>> {
+    const response = await this.request<DataSet[]>(`/api/datasets?page=${page}&pageSize=${pageSize}`);
+    return response as PaginatedResponse<DataSet>;
   }
 
   async uploadDataSet(file: File, name: string, description?: string): Promise<DataSetUploadResponse> {
@@ -188,14 +210,15 @@ class ApiService {
 
     const result = await response.json();
     
-    // Handle the actual backend response structure (camelCase)
-    if (result && typeof result === 'object' && 'dataSetId' in result) {
-      const transformed = {
-        id: result.dataSetId,
-        message: result.message || '',
-        success: result.success || false
+    // Handle the new consistent API response structure
+    if (result && typeof result === 'object' && 'data' in result && result.success) {
+      // Server returns { data: { dataSetId: 123, ... }, success: true, message: "..." }
+      const uploadData = result.data;
+      return {
+        id: uploadData.dataSetId || uploadData.id,
+        message: result.message || 'Upload successful',
+        success: result.success
       };
-      return transformed;
     }
     
     // Fallback for unexpected response structure
@@ -234,6 +257,20 @@ class ApiService {
   // Health check
   async healthCheck(): Promise<{ status: string }> {
     const response = await this.request<{ status: string }>('/health');
+    return response.data;
+  }
+
+  // User Profile endpoints
+  async getUserProfile(): Promise<UserProfileDto> {
+    const response = await this.request<UserProfileDto>('/api/UserSettings/profile');
+    return response.data;
+  }
+
+  async updateUserProfile(data: UserSettingsDto): Promise<UserProfileDto> {
+    const response = await this.request<UserProfileDto>('/api/UserSettings/profile', {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
     return response.data;
   }
 }
