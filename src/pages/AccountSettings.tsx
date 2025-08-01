@@ -87,24 +87,25 @@ export default function AccountSettings() {
         setIsLoadingProfile(true)
         setError(null)
         
-        const userProfile = await apiService.getUserProfile()
-        
-        // Check if userProfile exists and has the expected structure
-        if (!userProfile) {
-          throw new Error('No user profile data received from server')
-        }
-        
-        // Update profile state with server data (with fallbacks for null/undefined values)
-        setProfile({
-          name: userProfile.name || user?.name || '',
-          email: userProfile.email || user?.email || '',
-          avatar: userProfile.picture || avatarOptions[0].url
-        })
-        
-        // Update settings state with server data (with fallbacks)
-        if (userProfile.settings && typeof userProfile.settings === 'object') {
-          setSettings(userProfile.settings)
-        }
+                 const userProfile = await apiService.getUserProfile()
+         
+         // Check if userProfile exists and has the expected structure
+         if (!userProfile) {
+           throw new Error('No user profile data received from server')
+         }
+         
+         // Update profile state with server data (with fallbacks for null/undefined values)
+         const newProfile = {
+           name: userProfile.name || user?.name || '',
+           email: userProfile.email || user?.email || '',
+           avatar: userProfile.picture || avatarOptions[0].url
+         }
+         setProfile(newProfile)
+         
+         // Update settings state with server data (with fallbacks)
+         if (userProfile.settings && typeof userProfile.settings === 'object') {
+           setSettings(userProfile.settings)
+         }
         
       } catch (err) {
         // eslint-disable-next-line no-console
@@ -129,24 +130,23 @@ export default function AccountSettings() {
         displayName: profile.name, // Map profile name to displayName
       }
       
-      // Call the API to update the profile
-      const updatedProfile = await apiService.updateUserProfile(updateData)
-      
-      // Update local state with the response
-      setProfile({
-        name: updatedProfile.name,
-        email: updatedProfile.email,
-        avatar: updatedProfile.picture || avatarOptions[0].url
-      })
-      setSettings(updatedProfile.settings)
-      
-      // eslint-disable-next-line no-console
-      console.log('Settings saved successfully')
+             // Call the API to update the profile
+       const updatedProfile = await apiService.updateUserProfile(updateData)
+       
+       // Update local state with the response
+       const newProfile = {
+         name: updatedProfile.name || profile.name, // Fallback to current profile name if server doesn't return it
+         email: updatedProfile.email || profile.email, // Fallback to current profile email if server doesn't return it
+         avatar: updatedProfile.picture || profile.avatar || avatarOptions[0].url
+       }
+       setProfile(newProfile)
+       
+       setSettings(updatedProfile.settings)
       // TODO: Add success toast notification
       
     } catch (err) {
       // eslint-disable-next-line no-console
-      console.error('Failed to save settings:', err)
+      console.error('❌ [AccountSettings] Failed to save settings:', err)
       setError('Failed to save settings. Please try again.')
     } finally {
       setIsLoading(false)
