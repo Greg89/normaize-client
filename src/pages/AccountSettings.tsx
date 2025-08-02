@@ -1,5 +1,7 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAuth } from '../hooks/useAuth'
+import { apiService } from '../services/api'
+import { UserSettingsDto } from '../types'
 import { 
   UserIcon, 
   ShieldCheckIcon, 
@@ -7,54 +9,68 @@ import {
   BellIcon
 } from '@heroicons/react/24/outline'
 
-interface UserProfile {
-  name: string
-  email: string
-  avatar?: string
-}
-
-interface UserPreferences {
-  theme: 'light' | 'dark' | 'system'
-  notifications: {
-    email: boolean
-    push: boolean
-    updates: boolean
-  }
-  language: string
-}
-
 // Preset avatar options - you can replace these with your actual avatar images
 const avatarOptions = [
   { id: 'default', url: '/avatars/default.png', name: 'Default' },
-  { id: 'avatar1', url: '/avatars/avatar1.png', name: 'Avatar 1' },
-  { id: 'avatar2', url: '/avatars/avatar2.png', name: 'Avatar 2' },
-  { id: 'avatar3', url: '/avatars/avatar3.png', name: 'Avatar 3' },
-  { id: 'avatar4', url: '/avatars/avatar4.png', name: 'Avatar 4' },
-  { id: 'avatar5', url: '/avatars/avatar5.png', name: 'Avatar 5' },
-  { id: 'avatar6', url: '/avatars/avatar6.png', name: 'Avatar 6' },
-  { id: 'avatar7', url: '/avatars/avatar7.png', name: 'Avatar 7' },
-  { id: 'avatar8', url: '/avatars/avatar8.png', name: 'Avatar 8' },
+  { id: 'avatar1', url: '/avatars/warrior.png', name: 'Warrior' },
+  { id: 'avatar2', url: '/avatars/mage.png', name: 'Mage' },
+  { id: 'avatar3', url: '/avatars/rogue.png', name: 'Rogue' },
+  { id: 'avatar4', url: '/avatars/duck.png', name: 'Duck' }
 ]
 
 export default function AccountSettings() {
   const { user } = useAuth()
   const [activeTab, setActiveTab] = useState('profile')
   const [isLoading, setIsLoading] = useState(false)
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   
-  const [profile, setProfile] = useState<UserProfile>({
+  // UI state for profile information
+  const [profile, setProfile] = useState({
     name: user?.name || '',
     email: user?.email || '',
-    avatar: user?.picture || avatarOptions[0].url
+    avatar: avatarOptions[0].url
   })
 
-  const [preferences, setPreferences] = useState<UserPreferences>({
-    theme: 'system',
-    notifications: {
-      email: true,
-      push: true,
-      updates: true
-    },
-    language: 'en'
+  // UI state for user settings
+  const [settings, setSettings] = useState<UserSettingsDto>({
+    id: 0,
+    userId: '',
+    
+    // Notification Settings
+    emailNotificationsEnabled: true,
+    pushNotificationsEnabled: true,
+    processingCompleteNotifications: true,
+    errorNotifications: true,
+    weeklyDigestEnabled: false,
+    
+    // UI/UX Preferences
+    theme: 'light',
+    language: 'en',
+    defaultPageSize: 20,
+    showTutorials: true,
+    compactMode: false,
+    
+    // Data Processing Preferences
+    autoProcessUploads: true,
+    maxPreviewRows: 100,
+    defaultFileType: 'CSV',
+    enableDataValidation: true,
+    enableSchemaInference: true,
+    
+    // Privacy Settings
+    shareAnalytics: true,
+    allowDataUsageForImprovement: false,
+    showProcessingTime: true,
+    
+    // Account Information
+    displayName: '',
+    timeZone: 'UTC',
+    dateFormat: 'MM/dd/yyyy',
+    timeFormat: '12h',
+    
+    createdAt: '',
+    updatedAt: ''
   })
 
   const tabs = [
@@ -64,45 +80,112 @@ export default function AccountSettings() {
     { id: 'security', name: 'Security', icon: ShieldCheckIcon }
   ]
 
+  // Fetch user profile on component mount
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      try {
+        setIsLoadingProfile(true)
+        setError(null)
+        
+                 const userProfile = await apiService.getUserProfile()
+         
+         // Check if userProfile exists and has the expected structure
+         if (!userProfile) {
+           throw new Error('No user profile data received from server')
+         }
+         
+         // Update profile state with server data (with fallbacks for null/undefined values)
+         const newProfile = {
+           name: userProfile.name || user?.name || '',
+           email: userProfile.email || user?.email || '',
+           avatar: userProfile.picture || avatarOptions[0].url
+         }
+         setProfile(newProfile)
+         
+         // Update settings state with server data (with fallbacks)
+         if (userProfile.settings && typeof userProfile.settings === 'object') {
+           setSettings(userProfile.settings)
+         }
+        
+      } catch (err) {
+        // eslint-disable-next-line no-console
+        console.error('Failed to fetch user profile:', err)
+        setError('Failed to load profile settings. Please try again.')
+      } finally {
+        setIsLoadingProfile(false)
+      }
+    }
+
+    fetchUserProfile()
+  }, [user?.name, user?.email])
+
   const handleSave = async () => {
     setIsLoading(true)
+    setError(null)
     
     try {
-      // TODO: Implement save API call for all settings
-      // eslint-disable-next-line no-console
-      console.log('Saving all settings:', { profile, preferences })
-      await new Promise(resolve => setTimeout(resolve, 1000)) // Simulate API call
+      // Prepare the update request with current settings
+      const updateData: UserSettingsDto = {
+        ...settings,
+        displayName: profile.name, // Map profile name to displayName
+      }
       
-      // Show success message
+             // Call the API to update the profile
+       const updatedProfile = await apiService.updateUserProfile(updateData)
+       
+       // Update local state with the response
+       const newProfile = {
+         name: updatedProfile.name || profile.name, // Fallback to current profile name if server doesn't return it
+         email: updatedProfile.email || profile.email, // Fallback to current profile email if server doesn't return it
+         avatar: updatedProfile.picture || profile.avatar || avatarOptions[0].url
+       }
+       setProfile(newProfile)
+       
+       setSettings(updatedProfile.settings)
+      // TODO: Add success toast notification
+      
+    } catch (err) {
       // eslint-disable-next-line no-console
-      console.log('Settings saved successfully')
-    } catch (error) {
-      // eslint-disable-next-line no-console
-      console.error('Failed to save settings:', error)
+      console.error('❌ [AccountSettings] Failed to save settings:', err)
+      setError('Failed to save settings. Please try again.')
     } finally {
       setIsLoading(false)
     }
   }
 
-  const handlePreferenceChange = (key: keyof UserPreferences, value: string | boolean) => {
-    setPreferences(prev => ({
+  const handleSettingChange = (key: keyof UserSettingsDto, value: UserSettingsDto[keyof UserSettingsDto]) => {
+    setSettings(prev => ({
       ...prev,
       [key]: value
     }))
   }
 
-  const handleNotificationChange = (key: keyof UserPreferences['notifications'], value: boolean) => {
-    setPreferences(prev => ({
+  const handleNotificationChange = (key: keyof Pick<UserSettingsDto, 'emailNotificationsEnabled' | 'pushNotificationsEnabled' | 'processingCompleteNotifications' | 'errorNotifications' | 'weeklyDigestEnabled'>, value: boolean) => {
+    setSettings(prev => ({
       ...prev,
-      notifications: {
-        ...prev.notifications,
-        [key]: value
-      }
+      [key]: value
     }))
   }
 
   const handleAvatarSelect = (avatarUrl: string) => {
     setProfile(prev => ({ ...prev, avatar: avatarUrl }))
+  }
+
+  if (isLoadingProfile) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Account Settings</h1>
+          <p className="text-gray-600">Manage your account preferences and settings</p>
+        </div>
+        <div className="bg-white rounded-lg shadow p-8">
+          <div className="flex items-center justify-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500"></div>
+            <span className="ml-3 text-gray-600">Loading profile settings...</span>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -120,6 +203,22 @@ export default function AccountSettings() {
           {isLoading ? 'Saving...' : 'Save Changes'}
         </button>
       </div>
+
+      {/* Error Message */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-md p-4">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div className="ml-3">
+              <p className="text-sm text-red-800">{error}</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Tab Navigation */}
       <div className="border-b border-gray-200">
@@ -171,9 +270,12 @@ export default function AccountSettings() {
                   type="email"
                   id="email"
                   value={profile.email}
-                  onChange={(e) => setProfile(prev => ({ ...prev, email: e.target.value }))}
-                  className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500"
+                  disabled
+                  className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 bg-gray-50 text-gray-500 cursor-not-allowed"
                 />
+                <p className="mt-1 text-sm text-gray-500">
+                  Email address is managed by Auth0 and cannot be changed here
+                </p>
               </div>
 
               <div>
@@ -235,8 +337,8 @@ export default function AccountSettings() {
                 </label>
                 <select
                   id="theme"
-                  value={preferences.theme}
-                  onChange={(e) => handlePreferenceChange('theme', e.target.value)}
+                  value={settings.theme}
+                  onChange={(e) => handleSettingChange('theme', e.target.value)}
                   className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500"
                 >
                   <option value="light">Light</option>
@@ -251,8 +353,8 @@ export default function AccountSettings() {
                 </label>
                 <select
                   id="language"
-                  value={preferences.language}
-                  onChange={(e) => handlePreferenceChange('language', e.target.value)}
+                  value={settings.language}
+                  onChange={(e) => handleSettingChange('language', e.target.value)}
                   className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500"
                 >
                   <option value="en">English</option>
@@ -260,6 +362,55 @@ export default function AccountSettings() {
                   <option value="fr">French</option>
                   <option value="de">German</option>
                 </select>
+              </div>
+
+              <div>
+                <label htmlFor="defaultPageSize" className="block text-sm font-medium text-gray-700">
+                  Default Page Size
+                </label>
+                <select
+                  id="defaultPageSize"
+                  value={settings.defaultPageSize}
+                  onChange={(e) => handleSettingChange('defaultPageSize', parseInt(e.target.value))}
+                  className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500"
+                >
+                  <option value={10}>10 items</option>
+                  <option value={20}>20 items</option>
+                  <option value={50}>50 items</option>
+                  <option value={100}>100 items</option>
+                </select>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm font-medium text-gray-900">Show Tutorials</h3>
+                  <p className="text-sm text-gray-500">Display helpful tutorials and tips</p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={settings.showTutorials}
+                    onChange={(e) => handleSettingChange('showTutorials', e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600"></div>
+                </label>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm font-medium text-gray-900">Compact Mode</h3>
+                  <p className="text-sm text-gray-500">Use a more compact layout</p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={settings.compactMode}
+                    onChange={(e) => handleSettingChange('compactMode', e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600"></div>
+                </label>
               </div>
             </div>
           </div>
@@ -277,8 +428,8 @@ export default function AccountSettings() {
                 <label className="relative inline-flex items-center cursor-pointer">
                   <input
                     type="checkbox"
-                    checked={preferences.notifications.email}
-                    onChange={(e) => handleNotificationChange('email', e.target.checked)}
+                    checked={settings.emailNotificationsEnabled}
+                    onChange={(e) => handleNotificationChange('emailNotificationsEnabled', e.target.checked)}
                     className="sr-only peer"
                   />
                   <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600"></div>
@@ -293,8 +444,8 @@ export default function AccountSettings() {
                 <label className="relative inline-flex items-center cursor-pointer">
                   <input
                     type="checkbox"
-                    checked={preferences.notifications.push}
-                    onChange={(e) => handleNotificationChange('push', e.target.checked)}
+                    checked={settings.pushNotificationsEnabled}
+                    onChange={(e) => handleNotificationChange('pushNotificationsEnabled', e.target.checked)}
                     className="sr-only peer"
                   />
                   <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600"></div>
@@ -303,14 +454,46 @@ export default function AccountSettings() {
 
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-sm font-medium text-gray-900">Update Notifications</h3>
-                  <p className="text-sm text-gray-500">Get notified about new features and updates</p>
+                  <h3 className="text-sm font-medium text-gray-900">Processing Complete Notifications</h3>
+                  <p className="text-sm text-gray-500">Get notified when data processing is complete</p>
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer">
                   <input
                     type="checkbox"
-                    checked={preferences.notifications.updates}
-                    onChange={(e) => handleNotificationChange('updates', e.target.checked)}
+                    checked={settings.processingCompleteNotifications}
+                    onChange={(e) => handleNotificationChange('processingCompleteNotifications', e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600"></div>
+                </label>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm font-medium text-gray-900">Error Notifications</h3>
+                  <p className="text-sm text-gray-500">Get notified about errors and issues</p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={settings.errorNotifications}
+                    onChange={(e) => handleNotificationChange('errorNotifications', e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600"></div>
+                </label>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm font-medium text-gray-900">Weekly Digest</h3>
+                  <p className="text-sm text-gray-500">Receive a weekly summary of your activity</p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={settings.weeklyDigestEnabled}
+                    onChange={(e) => handleNotificationChange('weeklyDigestEnabled', e.target.checked)}
                     className="sr-only peer"
                   />
                   <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600"></div>
