@@ -54,14 +54,14 @@ class ApiService {
       const token = await this.getToken();
       if (token) {
         headers['Authorization'] = `Bearer ${token}`;
-        console.log('🔍 API Request with token:', {
+        logger.devDebug('API Request with token', {
           endpoint,
           method: options.method || 'GET',
           tokenLength: token.length,
           tokenStart: token.substring(0, 20) + '...',
         });
       } else {
-        console.log('🔍 API Request without token:', {
+        logger.devDebug('API Request without token', {
           endpoint,
           method: options.method || 'GET',
         });
@@ -87,6 +87,7 @@ class ApiService {
         );
       } catch (loggingError) {
         // Prevent logging errors from breaking the API call
+        // Use console.warn as fallback since logger failed
         // eslint-disable-next-line no-console
         console.warn('Logging failed for API call:', loggingError);
       }

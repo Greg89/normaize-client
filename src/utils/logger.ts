@@ -262,6 +262,13 @@ class Logger {
     this.setCorrelationId(newCorrelationId);
     return newCorrelationId;
   }
+
+  // Development-only debug logging
+  devDebug(message: string, properties?: Record<string, unknown>): void {
+    if (this.environment === 'development') {
+      this.debug(message, properties);
+    }
+  }
 }
 
 // Create singleton instance
