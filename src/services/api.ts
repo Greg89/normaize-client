@@ -5,7 +5,7 @@ import { logger } from '../utils/logger';
 class ApiService {
   private baseUrl: string;
   private getToken?: () => Promise<string | null>;
-  private isRefreshing = false;
+  private forceReAuth?: () => Promise<void>;
 
   constructor() {
     this.baseUrl = API_CONFIG.BASE_URL;
@@ -13,6 +13,10 @@ class ApiService {
 
   setTokenGetter(getToken: () => Promise<string | null>) {
     this.getToken = getToken;
+  }
+
+  setForceReAuth(forceReAuth: () => Promise<void>) {
+    this.forceReAuth = forceReAuth;
   }
 
   /**
@@ -50,6 +54,17 @@ class ApiService {
       const token = await this.getToken();
       if (token) {
         headers['Authorization'] = `Bearer ${token}`;
+        console.log('🔍 API Request with token:', {
+          endpoint,
+          method: options.method || 'GET',
+          tokenLength: token.length,
+          tokenStart: token.substring(0, 20) + '...',
+        });
+      } else {
+        console.log('🔍 API Request without token:', {
+          endpoint,
+          method: options.method || 'GET',
+        });
       }
     }
     
@@ -76,63 +91,20 @@ class ApiService {
         console.warn('Logging failed for API call:', loggingError);
       }
 
-      // Handle 401 Unauthorized - try to refresh token and retry
-      if (response.status === 401 && this.getToken && !this.isRefreshing) {
-        this.isRefreshing = true;
+      // Handle 401 Unauthorized - trigger re-authentication
+      if (response.status === 401) {
+        await logger.warn('401 Unauthorized detected, triggering re-authentication', {
+          url,
+          method: options.method || 'GET',
+          endpoint,
+          hasToken: !!headers['Authorization'],
+        });
         
-        try {
-          // Try to get a fresh token
-          const newToken = await this.getToken();
-          this.isRefreshing = false;
-          
-          if (newToken) {
-            // Retry the request with the new token
-            headers['Authorization'] = `Bearer ${newToken}`;
-            const retryConfig: RequestInit = {
-              ...config,
-              headers,
-            };
-            
-            const retryResponse = await fetch(url, retryConfig);
-            const retryDuration = Date.now() - startTime;
-            
-            // Log the retry
-            await logger.trackApiCall(
-              options.method || 'GET',
-              url,
-              retryResponse.status,
-              retryDuration
-            );
-            
-            if (!retryResponse.ok) {
-              await logger.error(`API retry failed: ${retryResponse.status} ${retryResponse.statusText}`, {
-                url,
-                method: options.method || 'GET',
-                status: retryResponse.status,
-                duration: retryDuration,
-                retry: true,
-              });
-              throw new Error(`HTTP error! status: ${retryResponse.status}`);
-            }
-            
-            // Handle 204 No Content responses (no body to parse)
-            if (retryResponse.status === 204) {
-              return {
-                data: {} as T,
-                success: true,
-                message: 'Success'
-              };
-            }
-            
-            const data = await retryResponse.json();
-            this.validateResponse(data);
-            return data;
-          }
-        } catch (refreshError) {
-          this.isRefreshing = false;
-          await logger.error('Token refresh failed', { refreshError });
-          // Continue to throw the original 401 error
+        if (this.forceReAuth) {
+          await this.forceReAuth();
         }
+        
+        throw new Error('Authentication required - redirecting to login');
       }
 
       if (!response.ok) {
@@ -227,6 +199,14 @@ class ApiService {
 
   async deleteDataSet(id: number): Promise<void> {
     await this.request(`/api/datasets/${id}`, { method: 'DELETE' });
+  }
+
+  async updateDataSet(id: number, updates: { name?: string; description?: string }): Promise<DataSet> {
+    const response = await this.request<DataSet>(`/api/datasets/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates),
+    });
+    return response.data;
   }
 
   // Analysis endpoints

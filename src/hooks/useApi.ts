@@ -98,4 +98,31 @@ export function useDeleteDataSet() {
     loading,
     error,
   };
+}
+
+export function useUpdateDataSet() {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const updateDataSet = useCallback(async (id: number, updates: { name?: string; description?: string }): Promise<boolean> => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      await apiService.updateDataSet(id, updates);
+      setLoading(false);
+      return true;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to update dataset';
+      setError(errorMessage);
+      setLoading(false);
+      return false;
+    }
+  }, []);
+
+  return {
+    updateDataSet,
+    loading,
+    error,
+  };
 } 

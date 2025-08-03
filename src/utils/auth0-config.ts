@@ -4,12 +4,8 @@ export const auth0Config = {
   authorizationParams: {
     redirect_uri: window.location.origin,
     audience: import.meta.env.VITE_AUTH0_AUDIENCE || '',
-    scope: 'openid profile email offline_access'
+    scope: 'openid profile email'
   },
   cacheLocation: 'localstorage' as const,
-  useRefreshTokens: true,
-  // Add better token management
   skipRedirectCallback: false,
-  // Set token expiration buffer (refresh 5 minutes before expiry)
-  tokenExpirationBuffer: 300,
 }; 
