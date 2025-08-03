@@ -28,7 +28,6 @@ export const Auth0ProviderWrapper = ({ children }: Auth0ProviderWrapperProps) =>
       authorizationParams={auth0Config.authorizationParams}
       onRedirectCallback={onRedirectCallback}
       cacheLocation={auth0Config.cacheLocation}
-      useRefreshTokens={auth0Config.useRefreshTokens}
     >
       <SentryUserManager>
         <TokenValidator>
