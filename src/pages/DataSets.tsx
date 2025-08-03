@@ -180,7 +180,6 @@ export default function DataSets() {
                   <div className="flex justify-between items-start">
                     <div>
                       <h4 className="font-medium text-gray-900">{dataset.name}</h4>
-                      <p className="text-sm text-gray-500">{dataset.fileName}</p>
                       {dataset.description && (
                         <p className="text-sm text-gray-600 mt-1">{dataset.description}</p>
                       )}
