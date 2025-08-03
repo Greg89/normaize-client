@@ -87,7 +87,7 @@ export default function DatasetDetailsModal({
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
               disabled={loading}
             />
           </div>
@@ -98,7 +98,7 @@ export default function DatasetDetailsModal({
             <div className="space-y-2 text-sm text-gray-600">
               <div className="flex justify-between">
                 <span>File Name:</span>
-                <span className="font-mono">{dataset.fileName}</span>
+                <span className="font-mono truncate max-w-xs ml-2" title={dataset.fileName}>{dataset.fileName}</span>
               </div>
               <div className="flex justify-between">
                 <span>File Type:</span>
@@ -106,7 +106,7 @@ export default function DatasetDetailsModal({
               </div>
               <div className="flex justify-between">
                 <span>File Size:</span>
-                <span>{(dataset.fileSize / 1024 / 1024).toFixed(2)} MB</span>
+                <span>{(dataset.fileSize / 1024 / 1024) < 0.01 ? '< 0.01 MB' : `${(dataset.fileSize / 1024 / 1024).toFixed(2)} MB`}</span>
               </div>
               <div className="flex justify-between">
                 <span>Uploaded:</span>
