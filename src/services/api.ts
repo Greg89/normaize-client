@@ -2,6 +2,10 @@ import { ApiResponse, PaginatedResponse, DataSet, Analysis, DataSetUploadRespons
 import { API_CONFIG } from '../utils/constants';
 import { logger } from '../utils/logger';
 
+interface PreviewRow {
+  [key: string]: string | number | boolean | null;
+}
+
 class ApiService {
   private baseUrl: string;
   private getToken?: () => Promise<string | null>;
@@ -207,6 +211,11 @@ class ApiService {
       method: 'PUT',
       body: JSON.stringify(updates),
     });
+    return response.data;
+  }
+
+  async getDataSetPreview(id: number): Promise<PreviewRow[]> {
+    const response = await this.request<PreviewRow[]>(`/api/datasets/${id}/preview`);
     return response.data;
   }
 

@@ -2,6 +2,10 @@ import { useState, useEffect, useCallback } from 'react';
 import { ErrorHandler } from '../utils/errorHandling';
 import { apiService } from '../services/api';
 
+interface PreviewRow {
+  [key: string]: string | number | boolean | null;
+}
+
 interface UseApiState<T> {
   data: T | null;
   loading: boolean;
@@ -122,6 +126,33 @@ export function useUpdateDataSet() {
 
   return {
     updateDataSet,
+    loading,
+    error,
+  };
+}
+
+export function useDatasetPreview() {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const getPreview = useCallback(async (id: number): Promise<PreviewRow[] | null> => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const data = await apiService.getDataSetPreview(id);
+      setLoading(false);
+      return data;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load preview data';
+      setError(errorMessage);
+      setLoading(false);
+      return null;
+    }
+  }, []);
+
+  return {
+    getPreview,
     loading,
     error,
   };

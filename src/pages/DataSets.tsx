@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import FileUpload from '../components/FileUpload';
 import DatasetDetailsModal from '../components/DatasetDetailsModal';
+import DatasetPreviewModal from '../components/DatasetPreviewModal';
 import { useDataSets, useDeleteDataSet, useUpdateDataSet } from '../hooks/useApi';
 import { DataSet } from '../types';
 import { logger } from '../utils/logger';
@@ -16,6 +17,7 @@ export default function DataSets() {
   const [openDropdown, setOpenDropdown] = useState<number | null>(null);
   const [selectedDataset, setSelectedDataset] = useState<DataSet | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -83,6 +85,12 @@ export default function DataSets() {
     setOpenDropdown(null); // Close dropdown
   };
 
+  const handleOpenPreview = (dataset: DataSet) => {
+    setSelectedDataset(dataset);
+    setShowPreviewModal(true);
+    setOpenDropdown(null); // Close dropdown
+  };
+
   const handleUpdateDataset = async (updates: { name: string; description: string }): Promise<boolean> => {
     if (!selectedDataset) return false;
 
@@ -105,6 +113,11 @@ export default function DataSets() {
 
   const handleCloseDetails = () => {
     setShowDetailsModal(false);
+    setSelectedDataset(null);
+  };
+
+  const handleClosePreview = () => {
+    setShowPreviewModal(false);
     setSelectedDataset(null);
   };
 
@@ -218,6 +231,12 @@ export default function DataSets() {
                                 Additional Details
                               </button>
                               <button
+                                onClick={() => handleOpenPreview(dataset)}
+                                className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900"
+                              >
+                                Preview Data
+                              </button>
+                              <button
                                 onClick={() => handleDeleteDataset(dataset)}
                                 className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 hover:text-red-700"
                                 disabled={deleteLoading}
@@ -244,6 +263,13 @@ export default function DataSets() {
         onClose={handleCloseDetails}
         onSave={handleUpdateDataset}
         loading={updateLoading}
+      />
+
+      {/* Dataset Preview Modal */}
+      <DatasetPreviewModal
+        dataset={selectedDataset}
+        isOpen={showPreviewModal}
+        onClose={handleClosePreview}
       />
     </div>
   );
