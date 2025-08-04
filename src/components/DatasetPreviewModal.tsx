@@ -1,4 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, Fragment } from 'react';
+import { Dialog, Transition } from '@headlessui/react';
+import { XMarkIcon, DocumentTextIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 import { DataSet } from '../types';
 import { apiService } from '../services/api';
 import { logger } from '../utils/logger';
@@ -31,8 +33,6 @@ export default function DatasetPreviewModal({
     
     try {
       const response = await apiService.getDataSetPreview(dataset.id);
-      
-
       
       // Handle the API response format
       let data: PreviewRow[] = [];
@@ -102,92 +102,187 @@ export default function DatasetPreviewModal({
     return String(value);
   };
 
-  if (!isOpen || !dataset) return null;
-
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-6xl mx-4 max-h-[90vh] overflow-hidden flex flex-col">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-semibold text-gray-900">Data Preview: {dataset.name}</h2>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600"
-          >
-            <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
+    <Transition.Root show={isOpen} as={Fragment}>
+      <Dialog as="div" className="relative z-50" onClose={onClose}>
+        <Transition.Child
+          as={Fragment}
+          enter="ease-out duration-300"
+          enterFrom="opacity-0"
+          enterTo="opacity-100"
+          leave="ease-in duration-200"
+          leaveFrom="opacity-100"
+          leaveTo="opacity-0"
+        >
+          <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" />
+        </Transition.Child>
 
-        <div className="flex-1 overflow-auto">
-          {loading && (
-            <div className="text-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
-              <p className="text-gray-500 mt-2">Loading preview data...</p>
-            </div>
-          )}
+        <div className="fixed inset-0 z-10 overflow-y-auto">
+          <div className="flex min-h-full items-center justify-center p-4">
+            <Transition.Child
+              as={Fragment}
+              enter="ease-out duration-300"
+              enterFrom="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+              enterTo="opacity-100 translate-y-0 sm:scale-100"
+              leave="ease-in duration-200"
+              leaveFrom="opacity-100 translate-y-0 sm:scale-100"
+              leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+            >
+              <Dialog.Panel className="relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all w-full max-w-7xl max-h-[90vh] flex flex-col">
+                {/* Header */}
+                <div className="bg-gradient-to-r from-blue-600 to-indigo-700 px-6 py-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <div className="flex-shrink-0">
+                        <DocumentTextIcon className="h-6 w-6 text-white" />
+                      </div>
+                      <div>
+                        <Dialog.Title as="h3" className="text-lg font-semibold text-white">
+                          Dataset Preview
+                        </Dialog.Title>
+                        <p className="text-blue-100 text-sm">
+                          {dataset?.name}
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      className="rounded-md bg-blue-600 text-blue-100 hover:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+                      onClick={onClose}
+                    >
+                      <span className="sr-only">Close</span>
+                      <XMarkIcon className="h-6 w-6" />
+                    </button>
+                  </div>
+                </div>
 
-          {error && (
-            <div className="text-center py-8">
-              <p className="text-red-500 mb-4">Error loading preview: {error}</p>
-              <button
-                onClick={loadPreviewData}
-                className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
-              >
-                Try Again
-              </button>
-            </div>
-          )}
+                {/* Content */}
+                <div className="px-6 py-4 flex-1 overflow-y-auto">
+                  {loading && (
+                    <div className="flex flex-col items-center justify-center py-12">
+                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
+                      <p className="text-gray-600 text-lg font-medium">Loading preview data...</p>
+                      <p className="text-gray-500 text-sm mt-1">Please wait while we fetch your data</p>
+                    </div>
+                  )}
 
-          {!loading && !error && (!Array.isArray(previewData) || previewData.length === 0) && (
-            <div className="text-center py-8">
-              <p className="text-gray-500">No preview data available</p>
-            </div>
-          )}
-
-          {!loading && !error && Array.isArray(previewData) && previewData.length > 0 && (
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50 sticky top-0">
-                  <tr>
-                    {getColumnHeaders().map((header, index) => (
-                      <th
-                        key={index}
-                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  {error && (
+                    <div className="flex flex-col items-center justify-center py-12">
+                      <div className="flex items-center justify-center w-16 h-16 rounded-full bg-red-100 mb-4">
+                        <ExclamationTriangleIcon className="h-8 w-8 text-red-600" />
+                      </div>
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">Error Loading Preview</h3>
+                      <p className="text-gray-600 text-center mb-6 max-w-md">
+                        {error}
+                      </p>
+                      <button
+                        onClick={loadPreviewData}
+                        className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
                       >
-                        {header}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {previewData.map((row, rowIndex) => (
-                    <tr key={rowIndex} className="hover:bg-gray-50">
-                      {getColumnHeaders().map((header, colIndex) => (
-                        <td
-                          key={colIndex}
-                          className="px-6 py-4 whitespace-nowrap text-sm text-gray-900"
-                        >
-                          <div className="max-w-xs truncate" title={formatCellValue(row[header])}>
-                            {formatCellValue(row[header])}
-                          </div>
-                        </td>
-                      ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
+                        Try Again
+                      </button>
+                    </div>
+                  )}
 
-        <div className="mt-4 pt-4 border-t border-gray-200">
-          <div className="flex justify-between items-center text-sm text-gray-500">
-            <span>Showing {Array.isArray(previewData) ? previewData.length : 0} rows (preview)</span>
-            <span>Total: {dataset.rowCount.toLocaleString()} rows</span>
+                  {!loading && !error && (!Array.isArray(previewData) || previewData.length === 0) && (
+                    <div className="flex flex-col items-center justify-center py-12">
+                      <DocumentTextIcon className="h-12 w-12 text-gray-400 mb-4" />
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">No Preview Data</h3>
+                      <p className="text-gray-600 text-center">
+                        No preview data is available for this dataset.
+                      </p>
+                    </div>
+                  )}
+
+                  {!loading && !error && Array.isArray(previewData) && previewData.length > 0 && (
+                    <div className="space-y-4">
+                      {/* Data Stats */}
+                      <div className="bg-gray-50 rounded-lg p-4">
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                          <div>
+                            <p className="text-gray-500">Preview Rows</p>
+                            <p className="text-lg font-semibold text-gray-900">{previewData.length}</p>
+                          </div>
+                          <div>
+                            <p className="text-gray-500">Total Rows</p>
+                            <p className="text-lg font-semibold text-gray-900">{dataset?.rowCount.toLocaleString()}</p>
+                          </div>
+                          <div>
+                            <p className="text-gray-500">Columns</p>
+                            <p className="text-lg font-semibold text-gray-900">{getColumnHeaders().length}</p>
+                          </div>
+                          <div>
+                            <p className="text-gray-500">File Type</p>
+                            <p className="text-lg font-semibold text-gray-900">{dataset?.fileType}</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Data Table */}
+                      <div className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
+                        <div className="overflow-x-auto">
+                          <table className="min-w-full divide-y divide-gray-200">
+                            <thead className="bg-gradient-to-r from-gray-100 to-gray-50 border-b-2 border-gray-300">
+                              <tr>
+                                {getColumnHeaders().map((header, index) => (
+                                  <th
+                                    key={index}
+                                    className="px-6 py-4 text-left text-sm font-bold text-gray-700 uppercase tracking-wider border-r border-gray-200 last:border-r-0"
+                                  >
+                                    <div className="flex items-center space-x-2">
+                                      <span className="text-gray-600">{header}</span>
+                                      <div className="w-1 h-1 bg-blue-500 rounded-full opacity-60"></div>
+                                    </div>
+                                  </th>
+                                ))}
+                              </tr>
+                            </thead>
+                            <tbody className="bg-white divide-y divide-gray-200">
+                              {previewData.map((row, rowIndex) => (
+                                <tr 
+                                  key={rowIndex} 
+                                  className={`hover:bg-blue-50 transition-colors ${
+                                    rowIndex % 2 === 0 ? 'bg-white' : 'bg-gray-50'
+                                  }`}
+                                >
+                                  {getColumnHeaders().map((header, colIndex) => (
+                                    <td
+                                      key={colIndex}
+                                      className="px-6 py-4 whitespace-nowrap text-sm text-gray-900"
+                                    >
+                                      <div 
+                                        className="max-w-xs truncate font-mono text-xs" 
+                                        title={formatCellValue(row[header])}
+                                      >
+                                        {formatCellValue(row[header])}
+                                      </div>
+                                    </td>
+                                  ))}
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Footer */}
+                <div className="bg-gray-50 px-6 py-3 sm:flex sm:flex-row-reverse">
+                  <button
+                    type="button"
+                    className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm transition-colors"
+                    onClick={onClose}
+                  >
+                    Close
+                  </button>
+                </div>
+              </Dialog.Panel>
+            </Transition.Child>
           </div>
         </div>
-      </div>
-    </div>
+      </Dialog>
+    </Transition.Root>
   );
 } 
