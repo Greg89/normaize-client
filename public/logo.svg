@@ -1,0 +1,26 @@
+<svg width="360" height="62" viewBox="0 0 360 62" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Symbol: Data bars & normalization lines -->
+  <g>
+    <rect x="12" y="24" width="6" height="22" rx="3" fill="#5C27FE"/>
+    <rect x="24" y="14" width="6" height="32" rx="3" fill="#6ED1B4"/>
+    <rect x="36" y="8" width="6" height="38" rx="3" fill="#F9B531"/>
+    <rect x="48" y="18" width="6" height="28" rx="3" fill="#FF6A84"/>
+    <!-- AI neural node lines -->
+    <circle cx="15" cy="24" r="3" fill="#5C27FE"/>
+    <circle cx="27" cy="14" r="3" fill="#6ED1B4"/>
+    <circle cx="39" cy="8" r="3" fill="#F9B531"/>
+    <circle cx="51" cy="18" r="3" fill="#FF6A84"/>
+    <polyline points="15,24 27,14 39,8 51,18" fill="none" stroke="#7D7D7D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  
+  <!-- App Name: NormAIze -->
+  <text x="65" y="38" font-family="'Segoe UI', 'Arial', sans-serif" font-size="32" font-weight="bold" fill="#232643" letter-spacing="1">
+    Norm
+    <tspan fill="#5C27FE">AI</tspan>
+    ze
+  </text>
+  <!-- Slogan (optional, remove if not needed) -->
+  <!-- <text x="72" y="54" font-family="'Segoe UI', 'Arial', sans-serif" font-size="12" fill="#7D7D7D">
+    Data toolbox: Upload · Normalize · Analyze · Visualize
+  </text> -->
+</svg>

@@ -126,8 +126,17 @@ export default function Layout({ children }: LayoutProps) {
         <nav className="w-64 bg-white shadow-sm min-h-screen">
           <div className="p-4">
             <div className="mb-6 pb-4 border-b border-gray-200">
-              <h1 className="text-xl font-semibold text-gray-900">NormAIze</h1>
-              <span className="text-sm text-gray-500">Data Toolbox</span>
+              <div className="flex items-center space-x-3">
+                <img 
+                  src="/icon.svg" 
+                  alt="NormAIze Icon" 
+                  className="h-8 w-8"
+                />
+                <div>
+                  <h1 className="text-xl font-semibold text-gray-900">NormAIze</h1>
+                  <span className="text-sm text-gray-500">Data Toolbox</span>
+                </div>
+              </div>
             </div>
             
             <nav className="space-y-1">
