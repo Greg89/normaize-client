@@ -11,12 +11,37 @@ import { SentryErrorBoundary } from './components/SentryErrorBoundary'
 import { useAuth } from './hooks/useAuth'
 import LoadingSpinner from './components/LoadingSpinner'
 
+
 function App() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, error } = useAuth();
 
   // Show loading spinner while checking authentication
   if (isLoading) {
     return <LoadingSpinner />;
+  }
+
+  // If there's an authentication error, show error message
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="max-w-md w-full space-y-8">
+          <div className="text-center">
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">
+              Authentication Error
+            </h2>
+            <p className="text-gray-600 mb-4">
+              There was an issue with your authentication. Please try refreshing the page.
+            </p>
+            <button
+              onClick={() => window.location.reload()}
+              className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors"
+            >
+              Refresh Page
+            </button>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   // If not authenticated, only show the login page without the layout
@@ -43,6 +68,7 @@ function App() {
             <Route path="/analysis" element={<Analysis />} />
             <Route path="/visualization" element={<Visualization />} />
             <Route path="/account" element={<AccountSettings />} />
+
             {/* Redirect any unknown routes to dashboard */}
             <Route path="*" element={<Dashboard />} />
           </Routes>

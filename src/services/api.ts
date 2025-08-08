@@ -10,6 +10,7 @@ class ApiService {
   private baseUrl: string;
   private getToken?: () => Promise<string | null>;
   private forceReAuth?: () => Promise<void>;
+  private retryingRequest = false;
 
   constructor() {
     this.baseUrl = API_CONFIG.BASE_URL;
@@ -96,13 +97,130 @@ class ApiService {
         console.warn('Logging failed for API call:', loggingError);
       }
 
-      // Handle 401 Unauthorized - trigger re-authentication
+      // Handle 401 Unauthorized - attempt token refresh first
       if (response.status === 401) {
-        await logger.warn('401 Unauthorized detected, triggering re-authentication', {
+        await logger.warn('401 Unauthorized detected, attempting token refresh', {
           url,
           method: options.method || 'GET',
           endpoint,
           hasToken: !!headers['Authorization'],
+          retryingRequest: this.retryingRequest,
+        });
+        
+        // If we're already retrying, don't retry again - force re-auth
+        if (this.retryingRequest) {
+          await logger.warn('Token refresh already attempted, forcing re-authentication', {
+            url,
+            endpoint,
+          });
+          
+          if (this.forceReAuth) {
+            await this.forceReAuth();
+          }
+          
+          throw new Error('Authentication required - redirecting to login');
+        }
+        
+        // Try to get a fresh token and retry the request once
+        if (this.getToken) {
+          try {
+            this.retryingRequest = true;
+            await logger.debug('Attempting to get fresh token for retry', { url, endpoint });
+            
+            const freshToken = await this.getToken();
+            if (freshToken) {
+              await logger.debug('Got fresh token, retrying request', { url, endpoint });
+              
+              // Update authorization header with fresh token
+              const retryHeaders = {
+                ...headers,
+                'Authorization': `Bearer ${freshToken}`
+              };
+              
+              const retryConfig: RequestInit = {
+                ...config,
+                headers: retryHeaders,
+              };
+              
+              // Retry the request with fresh token
+              const retryResponse = await fetch(url, retryConfig);
+              const retryDuration = Date.now() - startTime;
+              
+              // Log the retry attempt
+              try {
+                await logger.trackApiCall(
+                  options.method || 'GET',
+                  url + ' (retry)',
+                  retryResponse.status,
+                  retryDuration
+                );
+              } catch (loggingError) {
+                // Use logger as fallback, but don't let logging errors break the API flow
+                try {
+                  logger.warn('Logging failed for retry API call', { error: loggingError });
+                } catch {
+                  // If even the logger fails, silently continue
+                }
+              }
+              
+              this.retryingRequest = false;
+              
+              // If retry still gets 401, force re-auth
+              if (retryResponse.status === 401) {
+                await logger.warn('Retry with fresh token also got 401, forcing re-authentication', {
+                  url,
+                  endpoint,
+                });
+                
+                if (this.forceReAuth) {
+                  await this.forceReAuth();
+                }
+                
+                throw new Error('Authentication required - redirecting to login');
+              }
+              
+              // If retry succeeded, continue with the retry response
+              if (retryResponse.ok) {
+                await logger.debug('Retry request succeeded', { url, endpoint, status: retryResponse.status });
+                
+                // Handle 204 No Content responses for retry
+                if (retryResponse.status === 204) {
+                  return {
+                    data: {} as T,
+                    success: true,
+                    message: 'Success'
+                  };
+                }
+                
+                const retryData = await retryResponse.json();
+                this.validateResponse(retryData);
+                return retryData;
+              }
+              
+              // If retry failed for other reasons, fall through to normal error handling
+              this.retryingRequest = false;
+              throw new Error(`HTTP error! status: ${retryResponse.status}`);
+            }
+          } catch (tokenError) {
+            this.retryingRequest = false;
+            await logger.warn('Failed to get fresh token, forcing re-authentication', {
+              url,
+              endpoint,
+              error: tokenError,
+            });
+            
+            if (this.forceReAuth) {
+              await this.forceReAuth();
+            }
+            
+            throw new Error('Authentication required - redirecting to login');
+          }
+        }
+        
+        // If no token getter available, force re-auth
+        await logger.warn('No token getter available, forcing re-authentication', {
+          url,
+          endpoint,
         });
         
         if (this.forceReAuth) {
