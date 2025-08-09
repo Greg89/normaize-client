@@ -2,6 +2,10 @@ import { useAuth0 } from '@auth0/auth0-react';
 import { useCallback, useEffect } from 'react';
 import { logger } from '../utils/logger';
 
+interface Auth0Error extends Error {
+  error_description?: string;
+}
+
 export const useAuth = () => {
   const {
     isAuthenticated,
@@ -53,8 +57,9 @@ export const useAuth = () => {
   // Log authentication errors only
   useEffect(() => {
     if (error) {
+      const e = error as Auth0Error;
       logger.warn('Authentication error detected', {
-        error: error?.message || error?.error_description || error
+        error: e.error_description || e.message || String(e)
       });
     }
   }, [error]);
