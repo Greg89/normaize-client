@@ -62,9 +62,9 @@ export function useApi<T>(
 }
 
 // Specific hooks for common API calls
-export function useDataSets() {
-  const apiCall = useCallback(() => apiService.getDataSets(), []);
-  return useApi(apiCall, []);
+export function useDataSets(includeDeleted = false) {
+  const apiCall = useCallback(() => apiService.getDataSets(includeDeleted), [includeDeleted]);
+  return useApi(apiCall, [includeDeleted]);
 }
 
 export function useAnalyses() {

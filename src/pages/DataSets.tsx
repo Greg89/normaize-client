@@ -9,7 +9,8 @@ import { DataSet } from '../types';
 import { logger } from '../utils/logger';
 
 export default function DataSets() {
-  const { data: datasets, loading, error, refetch } = useDataSets();
+  const [includeDeleted, setIncludeDeleted] = useState(false);
+  const { data: datasets, loading, error, refetch } = useDataSets(includeDeleted);
   const { deleteDataSet, loading: deleteLoading } = useDeleteDataSet();
   const { updateDataSet, loading: updateLoading } = useUpdateDataSet();
   const [showUpload, setShowUpload] = useState(false);
@@ -132,12 +133,27 @@ export default function DataSets() {
           <h1 className="text-2xl font-bold text-gray-900">Datasets</h1>
           <p className="text-gray-600">Manage your uploaded data files</p>
         </div>
-        <button
-          onClick={() => setShowUpload(!showUpload)}
-          className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors"
-        >
-          {showUpload ? 'Cancel Upload' : 'Upload Dataset'}
-        </button>
+        <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2">
+            <span className="text-sm text-gray-600">Active only</span>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={includeDeleted}
+                onChange={(e) => setIncludeDeleted(e.target.checked)}
+                className="sr-only peer"
+              />
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600"></div>
+            </label>
+            <span className="text-sm text-gray-600">Include deleted</span>
+          </div>
+          <button
+            onClick={() => setShowUpload(!showUpload)}
+            className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors"
+          >
+            {showUpload ? 'Cancel Upload' : 'Upload Dataset'}
+          </button>
+        </div>
       </div>
 
       {/* Upload Section */}
@@ -188,7 +204,11 @@ export default function DataSets() {
               {datasets.map((dataset: DataSet) => (
                 <div
                   key={dataset.id}
-                  className="border border-gray-200 rounded-lg p-4 hover:shadow-sm transition-shadow"
+                  className={`border rounded-lg p-4 hover:shadow-sm transition-shadow ${
+                    dataset.isDeleted
+                      ? 'border-red-200 bg-red-50/60'
+                      : 'border-green-200 bg-green-50/60'
+                  }`}
                 >
                   <div className="flex justify-between items-start">
                     <div>
@@ -204,6 +224,11 @@ export default function DataSets() {
                       </div>
                     </div>
                     <div className="flex items-center space-x-2">
+                      {dataset.isDeleted && (
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700">
+                          Deleted
+                        </span>
+                      )}
                       {dataset.isProcessed && (
                         <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
                           Processed

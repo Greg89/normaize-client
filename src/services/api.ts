@@ -264,13 +264,15 @@ class ApiService {
   }
 
   // DataSet endpoints
-  async getDataSets(): Promise<DataSet[]> {
-    const response = await this.request<DataSet[]>('/api/datasets');
+  async getDataSets(includeDeleted = false): Promise<DataSet[]> {
+    const query = includeDeleted ? '?includeDeleted=true' : '';
+    const response = await this.request<DataSet[]>(`/api/datasets${query}`);
     return response.data;
   }
 
-  async getDataSetsPaginated(page = 1, pageSize = 10): Promise<PaginatedResponse<DataSet>> {
-    const response = await this.request<DataSet[]>(`/api/datasets?page=${page}&pageSize=${pageSize}`);
+  async getDataSetsPaginated(page = 1, pageSize = 10, includeDeleted = false): Promise<PaginatedResponse<DataSet>> {
+    const includeParam = includeDeleted ? '&includeDeleted=true' : '';
+    const response = await this.request<DataSet[]>(`/api/datasets?page=${page}&pageSize=${pageSize}${includeParam}`);
     return response as PaginatedResponse<DataSet>;
   }
 
