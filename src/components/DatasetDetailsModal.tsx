@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { DataSet } from '../types';
+import { formatFileSize } from '../utils/format';
 
 interface DatasetDetailsModalProps {
   dataset: DataSet | null;
@@ -106,7 +107,7 @@ export default function DatasetDetailsModal({
               </div>
               <div className="flex justify-between">
                 <span>File Size:</span>
-                <span>{(dataset.fileSize / 1024 / 1024) < 0.01 ? '< 0.01 MB' : `${(dataset.fileSize / 1024 / 1024).toFixed(2)} MB`}</span>
+                <span>{formatFileSize(dataset.fileSize)}</span>
               </div>
               <div className="flex justify-between">
                 <span>Uploaded:</span>

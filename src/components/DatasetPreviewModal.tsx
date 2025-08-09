@@ -15,6 +15,60 @@ interface DatasetPreviewModalProps {
   onClose: () => void;
 }
 
+// Type guards and parser for various preview response shapes
+function isObject(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object';
+}
+
+function hasRowsAndColumns(value: unknown): value is { rows: unknown; columns: unknown } {
+  return isObject(value) && 'rows' in value && 'columns' in value;
+}
+
+function parsePreviewResponse(
+  response: unknown,
+  onJsonParseError: (info: { parseError: unknown; data: unknown }) => void
+): { data: PreviewRow[]; columns: string[] } {
+  let data: PreviewRow[] = [];
+  let columns: string[] = [];
+
+  if (hasRowsAndColumns(response)) {
+    data = Array.isArray(response.rows) ? (response.rows as PreviewRow[]) : [];
+    columns = Array.isArray(response.columns) ? (response.columns as string[]) : [];
+    return { data, columns };
+  }
+
+  if (isObject(response) && 'data' in response) {
+    const inner = (response as { data: unknown }).data;
+
+    if (hasRowsAndColumns(inner)) {
+      data = Array.isArray(inner.rows) ? (inner.rows as PreviewRow[]) : [];
+      columns = Array.isArray(inner.columns) ? (inner.columns as string[]) : [];
+      return { data, columns };
+    }
+
+    if (Array.isArray(inner)) {
+      data = inner as PreviewRow[];
+      return { data, columns };
+    }
+
+    if (typeof inner === 'string') {
+      try {
+        data = JSON.parse(inner) as PreviewRow[];
+      } catch (parseError) {
+        onJsonParseError({ parseError, data: inner });
+        data = [];
+      }
+      return { data, columns };
+    }
+  }
+
+  if (Array.isArray(response)) {
+    data = response as PreviewRow[];
+  }
+
+  return { data, columns };
+}
+
 export default function DatasetPreviewModal({
   dataset,
   isOpen,
@@ -33,42 +87,9 @@ export default function DatasetPreviewModal({
     
     try {
       const response = await apiService.getDataSetPreview(dataset.id);
-      
-      // Handle the API response format
-      let data: PreviewRow[] = [];
-      let columns: string[] = [];
-      
-      // Direct format: { columns: [...], rows: [...] }
-      if (response && typeof response === 'object' && 'rows' in response && 'columns' in response) {
-        data = Array.isArray(response.rows) ? response.rows : [];
-        columns = Array.isArray(response.columns) ? response.columns : [];
-      }
-      // Wrapped format: { data: { columns: [...], rows: [...] } }
-      else if (response && typeof response === 'object' && 'data' in response) {
-        const responseData = response.data;
-        
-        if (responseData && typeof responseData === 'object' && 'rows' in responseData && 'columns' in responseData) {
-          data = Array.isArray(responseData.rows) ? responseData.rows : [];
-          columns = Array.isArray(responseData.columns) ? responseData.columns : [];
-        }
-        // Legacy format: direct array
-        else if (Array.isArray(responseData)) {
-          data = responseData;
-        }
-        // Legacy format: JSON string
-        else if (typeof responseData === 'string') {
-          try {
-            data = JSON.parse(responseData);
-          } catch (parseError) {
-            logger.error('Failed to parse preview data JSON', { parseError, data: responseData });
-            data = [];
-          }
-        }
-      } else if (Array.isArray(response)) {
-        data = response;
-      }
-      
-      // Store columns for use in rendering
+      const { data, columns } = parsePreviewResponse(response, ({ parseError, data }) =>
+        logger.error('Failed to parse preview data JSON', { parseError, data })
+      );
       setPreviewColumns(columns);
       setPreviewData(data);
     } catch (err) {

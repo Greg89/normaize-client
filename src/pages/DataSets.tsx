@@ -7,6 +7,7 @@ import DatasetPreviewModal from '../components/DatasetPreviewModal';
 import { useDataSets, useDeleteDataSet, useUpdateDataSet } from '../hooks/useApi';
 import { DataSet } from '../types';
 import { logger } from '../utils/logger';
+import { formatFileSize } from '../utils/format';
 
 export default function DataSets() {
   const [includeDeleted, setIncludeDeleted] = useState(false);
@@ -218,7 +219,7 @@ export default function DataSets() {
                       )}
                       <div className="flex items-center space-x-4 mt-2 text-xs text-gray-400">
                         <span>Uploaded: {new Date(dataset.uploadedAt).toLocaleDateString()}</span>
-                        <span>Size: {(dataset.fileSize / 1024 / 1024).toFixed(2)} MB</span>
+                        <span>Size: {formatFileSize(dataset.fileSize)}</span>
                         <span>Rows: {dataset.rowCount}</span>
                         <span>Columns: {dataset.columnCount}</span>
                       </div>

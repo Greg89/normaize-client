@@ -155,11 +155,7 @@ class ApiService {
                 );
               } catch (loggingError) {
                 // Use logger as fallback, but don't let logging errors break the API flow
-                try {
                   logger.warn('Logging failed for retry API call', { error: loggingError });
-                } catch {
-                  // If even the logger fails, silently continue
-                }
               }
               
               this.retryingRequest = false;
