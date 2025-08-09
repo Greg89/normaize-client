@@ -9,6 +9,7 @@ import {
   Cog6ToothIcon
 } from '@heroicons/react/24/outline'
 import { useAuth } from '../hooks/useAuth'
+import { logger } from '../utils/logger'
 
 interface LayoutProps {
   children: ReactNode
@@ -30,8 +31,7 @@ export default function Layout({ children }: LayoutProps) {
 
   const handleSearch = (query: string) => {
     // TODO: Implement search functionality
-    // eslint-disable-next-line no-console
-    console.log('Searching for:', query)
+    logger.info('Searching for', { query })
   }
 
   const handleAccountSettings = () => {
