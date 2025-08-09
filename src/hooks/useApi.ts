@@ -2,6 +2,10 @@ import { useState, useEffect, useCallback } from 'react';
 import { ErrorHandler } from '../utils/errorHandling';
 import { apiService } from '../services/api';
 
+interface PreviewRow {
+  [key: string]: string | number | boolean | null;
+}
+
 interface UseApiState<T> {
   data: T | null;
   loading: boolean;
@@ -58,9 +62,9 @@ export function useApi<T>(
 }
 
 // Specific hooks for common API calls
-export function useDataSets() {
-  const apiCall = useCallback(() => apiService.getDataSets(), []);
-  return useApi(apiCall, []);
+export function useDataSets(includeDeleted = false) {
+  const apiCall = useCallback(() => apiService.getDataSets(includeDeleted), [includeDeleted]);
+  return useApi(apiCall, [includeDeleted]);
 }
 
 export function useAnalyses() {
@@ -95,6 +99,60 @@ export function useDeleteDataSet() {
 
   return {
     deleteDataSet,
+    loading,
+    error,
+  };
+}
+
+export function useUpdateDataSet() {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const updateDataSet = useCallback(async (id: number, updates: { name?: string; description?: string }): Promise<boolean> => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      await apiService.updateDataSet(id, updates);
+      setLoading(false);
+      return true;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to update dataset';
+      setError(errorMessage);
+      setLoading(false);
+      return false;
+    }
+  }, []);
+
+  return {
+    updateDataSet,
+    loading,
+    error,
+  };
+}
+
+export function useDatasetPreview() {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const getPreview = useCallback(async (id: number): Promise<PreviewRow[] | null> => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const data = await apiService.getDataSetPreview(id);
+      setLoading(false);
+      return data;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load preview data';
+      setError(errorMessage);
+      setLoading(false);
+      return null;
+    }
+  }, []);
+
+  return {
+    getPreview,
     loading,
     error,
   };

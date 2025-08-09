@@ -7,11 +7,12 @@ interface ApiInitializerProps {
 }
 
 export const ApiInitializer = ({ children }: ApiInitializerProps) => {
-  const { getToken } = useAuth();
+  const { getToken, forceReAuth } = useAuth();
 
   useEffect(() => {
     apiService.setTokenGetter(getToken);
-  }, [getToken]);
+    apiService.setForceReAuth(forceReAuth);
+  }, [getToken, forceReAuth]);
 
   return <>{children}</>;
 }; 

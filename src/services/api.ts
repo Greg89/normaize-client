@@ -2,10 +2,15 @@ import { ApiResponse, PaginatedResponse, DataSet, Analysis, DataSetUploadRespons
 import { API_CONFIG } from '../utils/constants';
 import { logger } from '../utils/logger';
 
+interface PreviewRow {
+  [key: string]: string | number | boolean | null;
+}
+
 class ApiService {
   private baseUrl: string;
   private getToken?: () => Promise<string | null>;
-  private isRefreshing = false;
+  private forceReAuth?: () => Promise<void>;
+  private retryingRequest = false;
 
   constructor() {
     this.baseUrl = API_CONFIG.BASE_URL;
@@ -13,6 +18,10 @@ class ApiService {
 
   setTokenGetter(getToken: () => Promise<string | null>) {
     this.getToken = getToken;
+  }
+
+  setForceReAuth(forceReAuth: () => Promise<void>) {
+    this.forceReAuth = forceReAuth;
   }
 
   /**
@@ -50,6 +59,16 @@ class ApiService {
       const token = await this.getToken();
       if (token) {
         headers['Authorization'] = `Bearer ${token}`;
+        logger.devDebug('API Request with token', {
+          endpoint,
+          method: options.method || 'GET',
+          tokenLength: token.length,
+        });
+      } else {
+        logger.devDebug('API Request without token', {
+          endpoint,
+          method: options.method || 'GET',
+        });
       }
     }
     
@@ -72,67 +91,138 @@ class ApiService {
         );
       } catch (loggingError) {
         // Prevent logging errors from breaking the API call
+        // Use console.warn as fallback since logger failed
         // eslint-disable-next-line no-console
         console.warn('Logging failed for API call:', loggingError);
       }
 
-      // Handle 401 Unauthorized - try to refresh token and retry
-      if (response.status === 401 && this.getToken && !this.isRefreshing) {
-        this.isRefreshing = true;
+      // Handle 401 Unauthorized - attempt token refresh first
+      if (response.status === 401) {
+        await logger.warn('401 Unauthorized detected, attempting token refresh', {
+          url,
+          method: options.method || 'GET',
+          endpoint,
+          hasToken: !!headers['Authorization'],
+          retryingRequest: this.retryingRequest,
+        });
         
-        try {
-          // Try to get a fresh token
-          const newToken = await this.getToken();
-          this.isRefreshing = false;
+        // If we're already retrying, don't retry again - force re-auth
+        if (this.retryingRequest) {
+          await logger.warn('Token refresh already attempted, forcing re-authentication', {
+            url,
+            endpoint,
+          });
           
-          if (newToken) {
-            // Retry the request with the new token
-            headers['Authorization'] = `Bearer ${newToken}`;
-            const retryConfig: RequestInit = {
-              ...config,
-              headers,
-            };
+          if (this.forceReAuth) {
+            await this.forceReAuth();
+          }
+          
+          throw new Error('Authentication required - redirecting to login');
+        }
+        
+        // Try to get a fresh token and retry the request once
+        if (this.getToken) {
+          try {
+            this.retryingRequest = true;
+            await logger.debug('Attempting to get fresh token for retry', { url, endpoint });
             
-            const retryResponse = await fetch(url, retryConfig);
-            const retryDuration = Date.now() - startTime;
-            
-            // Log the retry
-            await logger.trackApiCall(
-              options.method || 'GET',
-              url,
-              retryResponse.status,
-              retryDuration
-            );
-            
-            if (!retryResponse.ok) {
-              await logger.error(`API retry failed: ${retryResponse.status} ${retryResponse.statusText}`, {
-                url,
-                method: options.method || 'GET',
-                status: retryResponse.status,
-                duration: retryDuration,
-                retry: true,
-              });
+            const freshToken = await this.getToken();
+            if (freshToken) {
+              await logger.debug('Got fresh token, retrying request', { url, endpoint });
+              
+              // Update authorization header with fresh token
+              const retryHeaders = {
+                ...headers,
+                'Authorization': `Bearer ${freshToken}`
+              };
+              
+              const retryConfig: RequestInit = {
+                ...config,
+                headers: retryHeaders,
+              };
+              
+              // Retry the request with fresh token
+              const retryResponse = await fetch(url, retryConfig);
+              const retryDuration = Date.now() - startTime;
+              
+              // Log the retry attempt
+              try {
+                await logger.trackApiCall(
+                  options.method || 'GET',
+                  url + ' (retry)',
+                  retryResponse.status,
+                  retryDuration
+                );
+              } catch (loggingError) {
+                // Use logger as fallback, but don't let logging errors break the API flow
+                  logger.warn('Logging failed for retry API call', { error: loggingError });
+              }
+              
+              this.retryingRequest = false;
+              
+              // If retry still gets 401, force re-auth
+              if (retryResponse.status === 401) {
+                await logger.warn('Retry with fresh token also got 401, forcing re-authentication', {
+                  url,
+                  endpoint,
+                });
+                
+                if (this.forceReAuth) {
+                  await this.forceReAuth();
+                }
+                
+                throw new Error('Authentication required - redirecting to login');
+              }
+              
+              // If retry succeeded, continue with the retry response
+              if (retryResponse.ok) {
+                await logger.debug('Retry request succeeded', { url, endpoint, status: retryResponse.status });
+                
+                // Handle 204 No Content responses for retry
+                if (retryResponse.status === 204) {
+                  return {
+                    data: {} as T,
+                    success: true,
+                    message: 'Success'
+                  };
+                }
+                
+                const retryData = await retryResponse.json();
+                this.validateResponse(retryData);
+                return retryData;
+              }
+              
+              // If retry failed for other reasons, fall through to normal error handling
+              this.retryingRequest = false;
               throw new Error(`HTTP error! status: ${retryResponse.status}`);
             }
+          } catch (tokenError) {
+            this.retryingRequest = false;
+            await logger.warn('Failed to get fresh token, forcing re-authentication', {
+              url,
+              endpoint,
+              error: tokenError,
+            });
             
-            // Handle 204 No Content responses (no body to parse)
-            if (retryResponse.status === 204) {
-              return {
-                data: {} as T,
-                success: true,
-                message: 'Success'
-              };
+            if (this.forceReAuth) {
+              await this.forceReAuth();
             }
             
-            const data = await retryResponse.json();
-            this.validateResponse(data);
-            return data;
+            throw new Error('Authentication required - redirecting to login');
           }
-        } catch (refreshError) {
-          this.isRefreshing = false;
-          await logger.error('Token refresh failed', { refreshError });
-          // Continue to throw the original 401 error
         }
+        
+        // If no token getter available, force re-auth
+        await logger.warn('No token getter available, forcing re-authentication', {
+          url,
+          endpoint,
+        });
+        
+        if (this.forceReAuth) {
+          await this.forceReAuth();
+        }
+        
+        throw new Error('Authentication required - redirecting to login');
       }
 
       if (!response.ok) {
@@ -169,13 +259,15 @@ class ApiService {
   }
 
   // DataSet endpoints
-  async getDataSets(): Promise<DataSet[]> {
-    const response = await this.request<DataSet[]>('/api/datasets');
+  async getDataSets(includeDeleted = false): Promise<DataSet[]> {
+    const query = includeDeleted ? '?includeDeleted=true' : '';
+    const response = await this.request<DataSet[]>(`/api/datasets${query}`);
     return response.data;
   }
 
-  async getDataSetsPaginated(page = 1, pageSize = 10): Promise<PaginatedResponse<DataSet>> {
-    const response = await this.request<DataSet[]>(`/api/datasets?page=${page}&pageSize=${pageSize}`);
+  async getDataSetsPaginated(page = 1, pageSize = 10, includeDeleted = false): Promise<PaginatedResponse<DataSet>> {
+    const includeParam = includeDeleted ? '&includeDeleted=true' : '';
+    const response = await this.request<DataSet[]>(`/api/datasets?page=${page}&pageSize=${pageSize}${includeParam}`);
     return response as PaginatedResponse<DataSet>;
   }
 
@@ -227,6 +319,19 @@ class ApiService {
 
   async deleteDataSet(id: number): Promise<void> {
     await this.request(`/api/datasets/${id}`, { method: 'DELETE' });
+  }
+
+  async updateDataSet(id: number, updates: { name?: string; description?: string }): Promise<DataSet> {
+    const response = await this.request<DataSet>(`/api/datasets/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates),
+    });
+    return response.data;
+  }
+
+  async getDataSetPreview(id: number): Promise<PreviewRow[]> {
+    const response = await this.request<PreviewRow[]>(`/api/datasets/${id}/preview`);
+    return response.data;
   }
 
   // Analysis endpoints

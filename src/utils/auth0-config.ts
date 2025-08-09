@@ -7,9 +7,5 @@ export const auth0Config = {
     scope: 'openid profile email offline_access'
   },
   cacheLocation: 'localstorage' as const,
-  useRefreshTokens: true,
-  // Add better token management
   skipRedirectCallback: false,
-  // Set token expiration buffer (refresh 5 minutes before expiry)
-  tokenExpirationBuffer: 300,
 }; 

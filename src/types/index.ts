@@ -115,6 +115,7 @@ export interface DataSet {
   rowCount: number;
   columnCount: number;
   isProcessed: boolean;
+  isDeleted?: boolean;
 }
 
 // Analysis Types

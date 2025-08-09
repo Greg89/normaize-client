@@ -3,6 +3,7 @@ import React, { ReactNode, useEffect, useCallback } from 'react';
 import { auth0Config } from '../utils/auth0-config';
 import { setSentryUser, clearSentryUser } from '../utils/sentry';
 import { logger } from '../utils/logger';
+import { SessionPersistence } from './SessionPersistence';
 
 interface Auth0ProviderWrapperProps {
   children: ReactNode;
@@ -21,6 +22,14 @@ export const Auth0ProviderWrapper = ({ children }: Auth0ProviderWrapperProps) =>
     );
   };
 
+  // Check if config is valid
+  if (!auth0Config.domain || !auth0Config.clientId) {
+    logger.error('Auth0Provider: Invalid configuration', {
+      hasDomain: !!auth0Config.domain,
+      hasClientId: !!auth0Config.clientId
+    });
+  }
+  
   return (
     <Auth0Provider
       domain={auth0Config.domain}
@@ -28,11 +37,14 @@ export const Auth0ProviderWrapper = ({ children }: Auth0ProviderWrapperProps) =>
       authorizationParams={auth0Config.authorizationParams}
       onRedirectCallback={onRedirectCallback}
       cacheLocation={auth0Config.cacheLocation}
-      useRefreshTokens={auth0Config.useRefreshTokens}
+      useRefreshTokens={true}
+      useRefreshTokensFallback={true}
     >
       <SentryUserManager>
         <TokenValidator>
-          {children}
+          <SessionPersistence>
+            {children}
+          </SessionPersistence>
         </TokenValidator>
       </SentryUserManager>
     </Auth0Provider>
@@ -64,10 +76,10 @@ const TokenValidator: React.FC<{ children: ReactNode }> = ({ children }) => {
         detailedResponse: true,
         timeoutInSeconds: 10 
       });
-      logger.debug('Token validation successful');
     } catch (error) {
-      logger.error('Token validation failed during periodic check', { error });
-      // The useAuth hook will handle the re-authentication
+      logger.debug('Token validation failed during periodic check', { error });
+      // Don't force logout on validation errors during periodic checks
+      // Only log the error for monitoring
     }
   }, [getAccessTokenSilently]);
 
@@ -81,6 +93,18 @@ const TokenValidator: React.FC<{ children: ReactNode }> = ({ children }) => {
       
       return () => clearInterval(interval);
     }
+  }, [isAuthenticated, isLoading, validateToken]);
+
+  // Add a listener for page visibility changes to validate token when page becomes visible
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden && isAuthenticated && !isLoading) {
+        validateToken();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, [isAuthenticated, isLoading, validateToken]);
 
   // Show error message if there's an authentication error
