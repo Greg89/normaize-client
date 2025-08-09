@@ -63,7 +63,6 @@ class ApiService {
           endpoint,
           method: options.method || 'GET',
           tokenLength: token.length,
-          tokenStart: token.substring(0, 20) + '...',
         });
       } else {
         logger.devDebug('API Request without token', {
