@@ -43,4 +43,7 @@ export default {
   ],
   collectCoverage: true,
   verbose: true,
+  automock: false,
+  resetMocks: true,
+  restoreMocks: true,
 };
