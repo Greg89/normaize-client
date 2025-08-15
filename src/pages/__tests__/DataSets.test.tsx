@@ -279,7 +279,7 @@ describe('DataSets', () => {
       expect(screen.getByText('Uploaded: 12/31/2022')).toBeInTheDocument();
       
       // Check that size information exists (there are multiple datasets with same size)
-      const sizeElements = screen.getAllByText('Size: < 0.01 MB');
+      const sizeElements = screen.getAllByText('Size: 1.0 KB');
       expect(sizeElements.length).toBeGreaterThan(0);
       
       expect(screen.getByText('Rows: 100')).toBeInTheDocument();

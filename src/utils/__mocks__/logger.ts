@@ -9,4 +9,5 @@ export const logger = {
   log: jest.fn(),
   trace: jest.fn(),
   fatal: jest.fn(),
+  trackUserAction: jest.fn(),
 };
