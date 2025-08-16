@@ -19,14 +19,14 @@ interface AppConfig {
   // Logging Configuration
   logging: {
     seqUrl: string;
-    seqApiKey?: string;
+    seqApiKey: string | undefined;
     environment: string;
     logLevel: string;
   };
   
   // Error Tracking
   sentry: {
-    dsn?: string;
+    dsn: string | undefined;
     environment: string;
     release: string;
   };
@@ -107,10 +107,11 @@ class ConfigValidator {
     }
   }
 
-  private static validateBoolean(value: string | undefined, name: string, defaultValue: boolean): boolean {
-    if (!value) return defaultValue;
-    return value.toLowerCase() === 'true';
-  }
+  // This method is kept for future use but currently not used
+  // private static validateBoolean(value: string | undefined, name: string, defaultValue: boolean): boolean {
+  //   if (!value) return defaultValue;
+  //   return value.toLowerCase() === 'true';
+  // }
 
   private static validateNumber(value: string | undefined, name: string, defaultValue: number): number {
     if (!value) return defaultValue;
@@ -194,30 +195,33 @@ class ConfigManager {
     try {
       const envConfig: Partial<AppConfig> = {
         auth0: {
-          domain: import.meta.env.VITE_AUTH0_DOMAIN,
-          clientId: import.meta.env.VITE_AUTH0_CLIENT_ID,
-          audience: import.meta.env.VITE_AUTH0_AUDIENCE,
+          domain: import.meta.env['VITE_AUTH0_DOMAIN'],
+          clientId: import.meta.env['VITE_AUTH0_CLIENT_ID'],
+          audience: import.meta.env['VITE_AUTH0_AUDIENCE'],
         },
         api: {
-          baseUrl: import.meta.env.VITE_API_URL,
-          timeout: import.meta.env.VITE_API_TIMEOUT ? Number(import.meta.env.VITE_API_TIMEOUT) : undefined,
-          retryAttempts: import.meta.env.VITE_API_RETRY_ATTEMPTS ? Number(import.meta.env.VITE_API_RETRY_ATTEMPTS) : undefined,
+          baseUrl: import.meta.env['VITE_API_URL'] || 'http://localhost:5000',
+          timeout: import.meta.env['VITE_API_TIMEOUT'] ? Number(import.meta.env['VITE_API_TIMEOUT']) : 30000,
+          retryAttempts: import.meta.env['VITE_API_RETRY_ATTEMPTS'] ? Number(import.meta.env['VITE_API_RETRY_ATTEMPTS']) : 3,
         },
         logging: {
-          seqUrl: import.meta.env.VITE_SEQ_URL,
-          seqApiKey: import.meta.env.VITE_SEQ_API_KEY,
-          environment: import.meta.env.VITE_NODE_ENV,
-          logLevel: import.meta.env.VITE_LOG_LEVEL,
+          seqUrl: import.meta.env['VITE_SEQ_URL'],
+          seqApiKey: import.meta.env['VITE_SEQ_API_KEY'],
+          environment: import.meta.env['VITE_NODE_ENV'],
+          logLevel: import.meta.env['VITE_LOG_LEVEL'],
         },
         sentry: {
-          dsn: import.meta.env.VITE_SENTRY_DSN,
-          environment: import.meta.env.VITE_NODE_ENV,
-          release: import.meta.env.VITE_APP_VERSION,
+          dsn: import.meta.env['VITE_SENTRY_DSN'],
+          environment: import.meta.env['VITE_NODE_ENV'],
+          release: import.meta.env['VITE_APP_VERSION'],
         },
         app: {
-          name: import.meta.env.VITE_APP_NAME,
-          version: import.meta.env.VITE_APP_VERSION,
-          description: import.meta.env.VITE_APP_DESCRIPTION,
+          name: import.meta.env['VITE_APP_NAME'] || 'Normaize',
+          version: import.meta.env['VITE_APP_VERSION'] || '1.0.0',
+          description: import.meta.env['VITE_APP_DESCRIPTION'] || 'Data Toolbox',
+          isProduction: false,
+          isDevelopment: true,
+          isTest: false,
         },
       };
 
@@ -233,7 +237,7 @@ class ConfigManager {
 
       return validatedConfig;
     } catch (error) {
-      logger.error('Failed to load configuration', { error: error.message });
+      logger.error('Failed to load configuration', { error: error instanceof Error ? error.message : String(error) });
       
       // Return default config with warnings
       logger.warn('Using default configuration - some features may not work properly');

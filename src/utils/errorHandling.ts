@@ -81,17 +81,20 @@ export class ErrorHandler {
       code = ErrorType.UNKNOWN;
     }
 
-    return {
+    const result: ErrorInfo = {
       type: this.determineErrorType(error, code),
       severity,
       message,
-      code,
-      context,
       timestamp: new Date(),
-      url: typeof window !== 'undefined' ? window.location.href : undefined,
-      userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : undefined,
-      stack,
     };
+    
+    if (code !== undefined) result.code = code;
+    if (context !== undefined) result.context = context;
+    if (typeof window !== 'undefined') result.url = window.location.href;
+    if (typeof navigator !== 'undefined') result.userAgent = navigator.userAgent;
+    if (stack !== undefined) result.stack = stack;
+    
+    return result;
   }
 
   private static determineErrorType(error: unknown, code?: string): ErrorType {
@@ -232,7 +235,7 @@ export class ErrorHandler {
       });
     } catch (trackingError) {
       // Don't let tracking errors interfere with main error handling
-      logger.warn('Failed to track error metrics:', trackingError);
+      logger.warn('Failed to track error metrics:', trackingError instanceof Error ? { error: trackingError.message } : { error: String(trackingError) });
     }
   }
 
@@ -268,15 +271,18 @@ export class ErrorHandler {
 
   // New utility methods
   static createError(type: ErrorType, message: string, context?: string, severity: ErrorSeverity = ErrorSeverity.MEDIUM): ErrorInfo {
-    return {
+    const result: ErrorInfo = {
       type,
       severity,
       message,
-      context,
       timestamp: new Date(),
-      url: typeof window !== 'undefined' ? window.location.href : undefined,
-      userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : undefined,
     };
+    
+    if (context !== undefined) result.context = context;
+    if (typeof window !== 'undefined') result.url = window.location.href;
+    if (typeof navigator !== 'undefined') result.userAgent = navigator.userAgent;
+    
+    return result;
   }
 
   static isRetryableError(error: ErrorInfo): boolean {
@@ -288,7 +294,7 @@ export class ErrorHandler {
     ].includes(error.type);
   }
 
-  static getRetryDelay(error: ErrorInfo, attempt: number): number {
+  static getRetryDelay(_error: ErrorInfo, attempt: number): number {
     const baseDelay = 1000; // 1 second
     const maxDelay = 30000; // 30 seconds
     const delay = Math.min(baseDelay * Math.pow(2, attempt), maxDelay);

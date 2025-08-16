@@ -159,7 +159,17 @@ export class GlobalErrorHandler {
     };
 
     // Log the error
-    this.logError(errorInfo);
+    const logData: { severity: ErrorSeverity; message: string; metadata?: unknown; stack?: string } = {
+      severity: errorInfo.severity,
+      message: errorInfo.message,
+      metadata: errorInfo.metadata,
+    };
+    
+    if (errorInfo.stack !== undefined) {
+      logData.stack = errorInfo.stack;
+    }
+    
+    this.logError(logData);
 
     // Show user notification if enabled and error is significant
     if (this.config.enableToastNotifications && severity !== ErrorSeverity.LOW) {
@@ -351,22 +361,22 @@ export class GlobalErrorHandler {
     try {
       switch (errorInfo.severity) {
         case ErrorSeverity.CRITICAL:
-          await logger.error(`CRITICAL: ${errorInfo.message}`, errorInfo.metadata, new Error(errorInfo.stack));
+          await logger.error(`CRITICAL: ${errorInfo.message}`, errorInfo.metadata as Record<string, unknown> | undefined, new Error(errorInfo.stack || ''));
           break;
         case ErrorSeverity.HIGH:
-          await logger.error(`HIGH: ${errorInfo.message}`, errorInfo.metadata, new Error(errorInfo.stack));
+          await logger.error(`HIGH: ${errorInfo.message}`, errorInfo.metadata as Record<string, unknown> | undefined, new Error(errorInfo.stack || ''));
           break;
         case ErrorSeverity.MEDIUM:
-          await logger.warn(`MEDIUM: ${errorInfo.message}`, errorInfo.metadata);
+          await logger.warn(`MEDIUM: ${errorInfo.message}`, errorInfo.metadata as Record<string, unknown> | undefined);
           break;
         case ErrorSeverity.LOW:
-          await logger.info(`LOW: ${errorInfo.message}`, errorInfo.metadata);
+          await logger.info(`LOW: ${errorInfo.message}`, errorInfo.metadata as Record<string, unknown> | undefined);
           break;
       }
     } catch (loggingError) {
       // Fallback to console if logging fails
       if (this.config.enableConsoleLogging) {
-        logger.error('Failed to log error:', loggingError);
+        logger.error('Failed to log error:', loggingError instanceof Error ? { error: loggingError.message } : { error: String(loggingError) });
         logger.error('Original error:', errorInfo);
       }
     }
@@ -392,7 +402,7 @@ export class GlobalErrorHandler {
     } catch (trackingError) {
       // Don't let tracking errors interfere with main error handling
       if (this.config.enableConsoleLogging) {
-        logger.warn('Failed to track global error metrics:', trackingError);
+        logger.warn('Failed to track global error metrics:', trackingError instanceof Error ? { error: trackingError.message } : { error: String(trackingError) });
       }
     }
   }

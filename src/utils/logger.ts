@@ -25,9 +25,9 @@ class Logger {
   private isLogging = false; // Prevent recursive logging
 
   constructor() {
-    this.seqUrl = import.meta.env.VITE_SEQ_URL || '';
-    this.apiKey = import.meta.env.VITE_SEQ_API_KEY;
-    this.environment = import.meta.env.VITE_NODE_ENV || 'production';
+    this.seqUrl = import.meta.env['VITE_SEQ_URL'] || '';
+    this.apiKey = import.meta.env['VITE_SEQ_API_KEY'];
+    this.environment = import.meta.env['VITE_NODE_ENV'] || 'production';
     this.correlationId = this.generateCorrelationId();
     this.sessionId = this.generateSessionId();
     
@@ -80,7 +80,7 @@ class Logger {
     }
 
     // Additional safety check for logging-related URLs
-    if (entry.properties?.url && (entry.properties.url as string).includes('/api/events/raw')) {
+    if (entry.properties && entry.properties['url'] && (entry.properties['url'] as string).includes('/api/events/raw')) {
       ConsoleLogger.log(entry.level, entry.message, {
         ...entry.properties,
         correlationId: entry.correlationId,
@@ -186,20 +186,28 @@ class Logger {
     // Map log levels to Seq format
     const seqLevel = this.mapToSeqLevel(level);
     
-    return {
+    const result: LogEntry = {
       Timestamp: new Date().toISOString(),
       level: seqLevel,
       message,
       MessageTemplate: message, // Add required MessageTemplate property
-      properties,
-      exception: exception ? this.formatException(exception) : undefined,
-      userId: this.userId,
+      properties: properties || {},
       sessionId: this.sessionId,
       correlationId: this.correlationId,
       environment: this.environment,
       userAgent: navigator.userAgent,
       url: window.location.href,
     };
+    
+    if (this.userId !== undefined) {
+      result.userId = this.userId;
+    }
+    
+    if (exception) {
+      result.exception = this.formatException(exception);
+    }
+    
+    return result;
   }
 
   private mapToSeqLevel(level: string): string {

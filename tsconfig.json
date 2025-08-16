@@ -55,9 +55,7 @@
   },
   "include": [
     "src",
-    "src/**/*",
-    "**/*.ts",
-    "**/*.tsx"
+    "src/**/*"
   ],
   "exclude": [
     "node_modules",

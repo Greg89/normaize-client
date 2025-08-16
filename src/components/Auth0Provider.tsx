@@ -93,6 +93,7 @@ const TokenValidator: React.FC<{ children: ReactNode }> = ({ children }) => {
       
       return () => clearInterval(interval);
     }
+    return undefined;
   }, [isAuthenticated, isLoading, validateToken]);
 
   // Add a listener for page visibility changes to validate token when page becomes visible
