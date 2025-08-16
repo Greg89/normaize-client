@@ -36,13 +36,13 @@ afterEach(() => {
 });
 
 describe('GlobalErrorBoundary', () => {
-  const mockLogger = require('../../utils/logger').logger;
-  const mockCaptureSentryEvent = require('../../utils/sentry').captureSentryEvent;
+      const mockLogger = require('../../utils/logger').logger;
+    const mockCaptureSentryEvent = require('../../utils/sentry').captureSentryEvent;
 
   beforeEach(() => {
     jest.clearAllMocks();
     // Suppress console.error for expected errors in tests
-    jest.spyOn(console, 'error').mockImplementation(() => {});
+    jest.spyOn(console, 'error').mockImplementation(() => {}); // eslint-disable-line @typescript-eslint/no-empty-function
   });
 
   afterEach(() => {

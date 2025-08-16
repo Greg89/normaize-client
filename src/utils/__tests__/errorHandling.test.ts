@@ -1,4 +1,4 @@
-import { ErrorHandler, ErrorType, ErrorSeverity, ErrorInfo } from '../errorHandling';
+import { ErrorHandler, ErrorType, ErrorSeverity } from '../errorHandling';
 import { logger } from '../logger';
 
 // Mock the logger
@@ -12,9 +12,6 @@ jest.mock('react-hot-toast', () => ({
   warning: jest.fn(),
   info: jest.fn(),
 }));
-
-// Import toast after mocking
-import toast from 'react-hot-toast';
 
 describe('ErrorHandler', () => {
   beforeEach(() => {
@@ -334,7 +331,7 @@ describe('ErrorHandler', () => {
   describe('Edge cases', () => {
     it('should handle errors without stack traces', () => {
       const error = new Error('Test error');
-      delete (error as any).stack;
+      delete (error as { stack?: string }).stack;
 
       ErrorHandler.handle(error, 'test-context');
       expect(mockLogger.warn).toHaveBeenCalled();
@@ -342,7 +339,7 @@ describe('ErrorHandler', () => {
 
     it('should handle errors in non-browser environment', () => {
       const originalWindow = global.window;
-      delete (global as any).window;
+      delete (global as { window?: unknown }).window;
 
       ErrorHandler.handle(new Error('Test error'), 'test-context');
       expect(mockLogger.warn).toHaveBeenCalled();
@@ -352,7 +349,7 @@ describe('ErrorHandler', () => {
 
     it('should handle errors without navigator', () => {
       const originalNavigator = global.navigator;
-      delete (global as any).navigator;
+      delete (global as { navigator?: unknown }).navigator;
 
       ErrorHandler.handle(new Error('Test error'), 'test-context');
       expect(mockLogger.warn).toHaveBeenCalled();

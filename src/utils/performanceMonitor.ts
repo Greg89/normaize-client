@@ -65,8 +65,8 @@ class PerformanceMonitor {
           let cumulativeLayoutShift = 0;
           const entries = list.getEntries();
           entries.forEach((entry) => {
-            if (!(entry as any).hadRecentInput) {
-              cumulativeLayoutShift += (entry as any).value;
+            if (!(entry as { hadRecentInput?: boolean }).hadRecentInput) {
+              cumulativeLayoutShift += (entry as unknown as { value: number }).value;
             }
           });
           this.trackCumulativeLayoutShift(cumulativeLayoutShift);
@@ -154,8 +154,9 @@ class PerformanceMonitor {
 
   private trackPerformanceAnalytics(metrics: PerformanceMetrics): void {
     // Send to analytics service if configured
-    if (typeof window !== 'undefined' && (window as any).gtag) {
-      (window as any).gtag('event', 'performance_metrics', {
+    if (typeof window !== 'undefined' && (window as unknown as { gtag?: unknown }).gtag) {
+      const gtag = (window as unknown as { gtag: (event: string, name: string, params: Record<string, unknown>) => void }).gtag;
+      gtag('event', 'performance_metrics', {
         event_category: 'performance',
         page_load_time: metrics.pageLoadTime,
         dom_content_loaded: metrics.domContentLoaded,

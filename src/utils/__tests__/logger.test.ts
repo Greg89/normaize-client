@@ -1,6 +1,24 @@
+// Define proper types for logger mock
+interface MockLogger {
+  setUserId: jest.Mock;
+  setCorrelationId: jest.Mock;
+  startCorrelation: jest.Mock;
+  error: jest.Mock;
+  warn: jest.Mock;
+  info: jest.Mock;
+  debug: jest.Mock;
+  trackUserAction: jest.Mock;
+  trackApiCall: jest.Mock;
+  devDebug: jest.Mock;
+  createLogEntry: jest.Mock;
+  userId?: string;
+  correlationId?: string;
+  sessionId?: string;
+}
+
 // Mock the entire logger module to avoid import.meta.env parsing issues
 jest.mock('../logger', () => {
-  const mockLogger = {
+  const mockLogger: MockLogger = {
     setUserId: jest.fn(),
     setCorrelationId: jest.fn(),
     startCorrelation: jest.fn(),
@@ -37,31 +55,31 @@ describe('Logger', () => {
     jest.clearAllMocks();
     
     // Setup mock logger methods
-    (logger as any).setUserId.mockImplementation((userId: string) => {
-      (logger as any).userId = userId;
+    (logger as MockLogger).setUserId.mockImplementation((userId: string) => {
+      (logger as MockLogger).userId = userId;
     });
     
-    (logger as any).setCorrelationId.mockImplementation((correlationId: string) => {
-      (logger as any).correlationId = correlationId;
+    (logger as MockLogger).setCorrelationId.mockImplementation((correlationId: string) => {
+      (logger as MockLogger).correlationId = correlationId;
     });
     
-    (logger as any).startCorrelation.mockImplementation((operation: string) => {
-      const newCorrelationId = `${(logger as any).correlationId}_${operation}_${Date.now()}`;
-      (logger as any).setCorrelationId(newCorrelationId);
+    (logger as MockLogger).startCorrelation.mockImplementation((operation: string) => {
+      const newCorrelationId = `${(logger as MockLogger).correlationId}_${operation}_${Date.now()}`;
+      (logger as MockLogger).setCorrelationId(newCorrelationId);
       return newCorrelationId;
     });
 
     // Mock the private createLogEntry method
-    (logger as any).createLogEntry.mockImplementation((level: string, message: string, properties?: any, exception?: Error) => ({
+    (logger as MockLogger).createLogEntry.mockImplementation((level: string, message: string, properties?: unknown, exception?: Error) => ({
       Timestamp: new Date().toISOString(),
       level: level === 'error' ? 'Error' : level === 'warn' ? 'Warning' : level === 'info' ? 'Information' : level === 'debug' ? 'Debug' : 'Information',
       message,
       MessageTemplate: message,
       properties,
       exception: exception ? `${exception.name}: ${exception.message}\n${exception.stack || ''}` : undefined,
-      userId: (logger as any).userId,
-      sessionId: (logger as any).sessionId,
-      correlationId: (logger as any).correlationId,
+      userId: (logger as MockLogger).userId,
+      sessionId: (logger as MockLogger).sessionId,
+      correlationId: (logger as MockLogger).correlationId,
       environment: 'test',
       userAgent: 'Mozilla/5.0 (Test Browser)',
       url: 'http://localhost:3000/test',
@@ -85,13 +103,13 @@ describe('Logger', () => {
     it('should set user ID correctly', () => {
       const userId = 'user123';
       logger.setUserId(userId);
-      expect((logger as any).userId).toBe(userId);
+      expect((logger as MockLogger).userId).toBe(userId);
     });
 
     it('should set correlation ID correctly', () => {
       const correlationId = 'corr123';
       logger.setCorrelationId(correlationId);
-      expect((logger as any).correlationId).toBe(correlationId);
+      expect((logger as MockLogger).correlationId).toBe(correlationId);
     });
 
     it('should start new correlation correctly', () => {
@@ -99,7 +117,7 @@ describe('Logger', () => {
       const newCorrelationId = logger.startCorrelation(operation);
       
       expect(newCorrelationId).toContain('test-operation');
-      expect(newCorrelationId).toContain((logger as any).correlationId);
+      expect(newCorrelationId).toContain((logger as MockLogger).correlationId);
     });
   });
 
@@ -145,7 +163,7 @@ describe('Logger', () => {
       const message = 'Test message';
       
       // Test the mocked createLogEntry method
-      const entry = (logger as any).createLogEntry('unknown', message);
+      const entry = (logger as MockLogger).createLogEntry('unknown', message);
       
       expect(entry.level).toBe('Information'); // Default fallback
     });
@@ -195,7 +213,7 @@ describe('Logger', () => {
     });
 
     it('should handle null properties', async () => {
-      await logger.info('Test message', null as any);
+      await logger.info('Test message', null as unknown);
 
       expect(logger.info).toHaveBeenCalledWith('Test message', null);
     });

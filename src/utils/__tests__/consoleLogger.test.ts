@@ -201,7 +201,7 @@ describe('ConsoleLogger', () => {
       const message = 'Test message';
       const data = null;
 
-      ConsoleLogger.log('info', message, data as any);
+      ConsoleLogger.log('info', message, data as unknown);
 
       expect(mockConsole.info).toHaveBeenCalledWith('[INFO] Test message', null);
     });
@@ -245,3 +245,4 @@ describe('ConsoleLogger', () => {
     });
   });
 });
+

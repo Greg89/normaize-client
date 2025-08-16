@@ -12,16 +12,16 @@ jest.mock('react-router-dom', () => ({
 
 // Mock Heroicons
 jest.mock('@heroicons/react/24/outline', () => ({
-  DocumentTextIcon: ({ className, ...props }: any) => (
+  DocumentTextIcon: ({ className, ...props }: { className?: string; [key: string]: unknown }) => (
     <div data-testid="document-text-icon" className={className} {...props} />
   ),
-  ChartBarIcon: ({ className, ...props }: any) => (
+  ChartBarIcon: ({ className, ...props }: { className?: string; [key: string]: unknown }) => (
     <div data-testid="chart-bar-icon" className={className} {...props} />
   ),
-  ChartPieIcon: ({ className, ...props }: any) => (
+  ChartPieIcon: ({ className, ...props }: { className?: string; [key: string]: unknown }) => (
     <div data-testid="chart-pie-icon" className={className} {...props} />
   ),
-  ArrowUpIcon: ({ className, ...props }: any) => (
+  ArrowUpIcon: ({ className, ...props }: { className?: string; [key: string]: unknown }) => (
     <div data-testid="arrow-up-icon" className={className} {...props} />
   ),
 }));
@@ -138,7 +138,9 @@ describe('Dashboard', () => {
     const uploadCard = screen.getByText('Upload Dataset').closest('.card');
     expect(uploadCard).toBeInTheDocument();
     
-    fireEvent.click(uploadCard!);
+    if (uploadCard) {
+      fireEvent.click(uploadCard);
+    }
     
     expect(mockNavigate).toHaveBeenCalledWith('/datasets?upload=true');
   });
@@ -148,12 +150,16 @@ describe('Dashboard', () => {
     
     // Test Run Analysis
     const analysisCard = screen.getByText('Run Analysis').closest('.card');
-    fireEvent.click(analysisCard!);
+    if (analysisCard) {
+      fireEvent.click(analysisCard);
+    }
     expect(mockNavigate).toHaveBeenCalledWith('/analysis');
     
     // Test Create Visualization
     const visualizationCard = screen.getByText('Create Visualization').closest('.card');
-    fireEvent.click(visualizationCard!);
+    if (visualizationCard) {
+      fireEvent.click(visualizationCard);
+    }
     expect(mockNavigate).toHaveBeenCalledWith('/visualization');
   });
 
@@ -195,9 +201,9 @@ describe('Dashboard', () => {
     const analysisCard = screen.getByText('Run Analysis').closest('.card');
     const visualizationCard = screen.getByText('Create Visualization').closest('.card');
     
-    fireEvent.click(uploadCard!);
-    fireEvent.click(analysisCard!);
-    fireEvent.click(visualizationCard!);
+    if (uploadCard) fireEvent.click(uploadCard);
+    if (analysisCard) fireEvent.click(analysisCard);
+    if (visualizationCard) fireEvent.click(visualizationCard);
     
     expect(mockNavigate).toHaveBeenCalledTimes(3);
     expect(mockNavigate).toHaveBeenNthCalledWith(1, '/datasets?upload=true');

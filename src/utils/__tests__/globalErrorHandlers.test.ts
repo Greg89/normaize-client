@@ -17,7 +17,7 @@ describe('GlobalErrorHandler', () => {
     jest.clearAllTimers();
 
     // Reset the singleton instance
-    (GlobalErrorHandler as any).instance = undefined;
+    (GlobalErrorHandler as { instance?: GlobalErrorHandler }).instance = undefined;
     
     // Create a fresh instance for each test
     globalErrorHandler = GlobalErrorHandler.getInstance();
@@ -41,7 +41,7 @@ describe('GlobalErrorHandler', () => {
       };
       
       // Reset instance
-      (GlobalErrorHandler as any).instance = undefined;
+      (GlobalErrorHandler as { instance?: GlobalErrorHandler }).instance = undefined;
       const instance = GlobalErrorHandler.getInstance(customConfig);
       expect(instance.getCurrentConfig().enableToastNotifications).toBe(false);
       expect(instance.getCurrentConfig().maxErrorsPerMinute).toBe(5);
@@ -68,7 +68,7 @@ describe('GlobalErrorHandler', () => {
       const documentAddEventListenerSpy = jest.spyOn(document, 'addEventListener');
       
       // Reset instance and create new one to trigger setup
-      (GlobalErrorHandler as any).instance = undefined;
+      (GlobalErrorHandler as { instance?: GlobalErrorHandler }).instance = undefined;
       GlobalErrorHandler.getInstance();
       
       expect(addEventListenerSpy).toHaveBeenCalledWith('error', expect.any(Function));
@@ -91,7 +91,9 @@ describe('GlobalErrorHandler', () => {
       mockLogger.warn.mockResolvedValue(undefined);
       mockLogger.error.mockResolvedValue(undefined);
       mockLogger.debug.mockResolvedValue(undefined);
-      mockErrorHandler.handle.mockImplementation(() => {});
+      mockErrorHandler.handle.mockImplementation(() => {
+        // Mock implementation - intentionally empty for testing
+      });
     });
 
     it('should handle JavaScript errors', () => {
@@ -120,7 +122,7 @@ describe('GlobalErrorHandler', () => {
         type: 'unhandledrejection',
         promise: Promise.resolve(), // Use a resolved promise instead of rejected to avoid worker crashes
         reason: new Error('Promise rejected'),
-      } as any;
+      } as { type: string; promise: Promise<unknown>; reason: Error };
 
       // Simulate the rejection event
       const rejectionHandler = globalErrorHandler['handlePromiseRejection'].bind(globalErrorHandler);

@@ -38,7 +38,7 @@ describe('ErrorBoundaryWithLogging', () => {
     mockLogger.setUserId = jest.fn();
     
     // Mock console.error to suppress React error boundary warnings in tests
-    jest.spyOn(console, 'error').mockImplementation(() => {});
+    jest.spyOn(console, 'error').mockImplementation(() => {}); // eslint-disable-line @typescript-eslint/no-empty-function
   });
 
   afterEach(() => {

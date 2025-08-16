@@ -273,7 +273,7 @@ export class GlobalErrorHandler {
     ];
 
     if (ignoredTypes.includes(resourceType)) {
-      const src = (target as any).src || (target as any).href;
+      const src = (target as { src?: string; href?: string }).src || (target as { src?: string; href?: string }).href;
       if (src && ignoredPatterns.some(pattern => pattern.test(src))) {
         return true;
       }
@@ -347,7 +347,7 @@ export class GlobalErrorHandler {
     return false;
   }
 
-  private async logError(errorInfo: any): Promise<void> {
+  private async logError(errorInfo: { severity: ErrorSeverity; message: string; metadata?: unknown; stack?: string }): Promise<void> {
     try {
       switch (errorInfo.severity) {
         case ErrorSeverity.CRITICAL:
@@ -366,13 +366,13 @@ export class GlobalErrorHandler {
     } catch (loggingError) {
       // Fallback to console if logging fails
       if (this.config.enableConsoleLogging) {
-        console.error('Failed to log error:', loggingError);
-        console.error('Original error:', errorInfo);
+        logger.error('Failed to log error:', loggingError);
+        logger.error('Original error:', errorInfo);
       }
     }
   }
 
-  private showUserNotification(errorInfo: any): void {
+  private showUserNotification(errorInfo: { message: string; context?: string; severity: ErrorSeverity }): void {
     // Use the ErrorHandler to show user-friendly messages
     ErrorHandler.handle(
       new Error(errorInfo.message),
@@ -381,7 +381,7 @@ export class GlobalErrorHandler {
     );
   }
 
-  private async trackError(errorInfo: any): Promise<void> {
+  private async trackError(errorInfo: { type: string; severity: ErrorSeverity; context?: string; code?: string }): Promise<void> {
     try {
       await logger.trackUserAction('global_error_occurred', {
         errorType: errorInfo.type,
@@ -392,7 +392,7 @@ export class GlobalErrorHandler {
     } catch (trackingError) {
       // Don't let tracking errors interfere with main error handling
       if (this.config.enableConsoleLogging) {
-        console.warn('Failed to track global error metrics:', trackingError);
+        logger.warn('Failed to track global error metrics:', trackingError);
       }
     }
   }

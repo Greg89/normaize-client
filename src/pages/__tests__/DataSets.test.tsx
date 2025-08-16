@@ -29,7 +29,11 @@ jest.mock('react-hot-toast', () => ({
 
 jest.mock('../../components/FileUpload', () => ({
   __esModule: true,
-  default: ({ onUploadSuccess, onUploadError, multiple }: any) => (
+  default: ({ onUploadSuccess, onUploadError, multiple }: { 
+    onUploadSuccess: (id: number, fileName: string) => void; 
+    onUploadError: (error: string) => void; 
+    multiple?: boolean 
+  }) => (
     <div data-testid="file-upload">
       <button onClick={() => onUploadSuccess(1, 'test.csv')}>Mock Upload Success</button>
       <button onClick={() => onUploadError('Upload failed')}>Mock Upload Error</button>
@@ -40,7 +44,13 @@ jest.mock('../../components/FileUpload', () => ({
 
 jest.mock('../../components/DatasetDetailsModal', () => ({
   __esModule: true,
-  default: ({ dataset, isOpen, onClose, onSave, loading }: any) => {
+  default: ({ dataset, isOpen, onClose, onSave, loading }: { 
+    dataset?: { name: string }; 
+    isOpen: boolean; 
+    onClose: () => void; 
+    onSave: (data: { name: string; description: string }) => void; 
+    loading: boolean 
+  }) => {
     if (!isOpen) return null;
     return (
       <div data-testid="dataset-details-modal">
@@ -57,7 +67,11 @@ jest.mock('../../components/DatasetDetailsModal', () => ({
 
 jest.mock('../../components/DatasetPreviewModal', () => ({
   __esModule: true,
-  default: ({ dataset, isOpen, onClose }: any) => {
+  default: ({ dataset, isOpen, onClose }: { 
+    dataset?: { name: string }; 
+    isOpen: boolean; 
+    onClose: () => void 
+  }) => {
     if (!isOpen) return null;
     return (
       <div data-testid="dataset-preview-modal">
@@ -253,7 +267,7 @@ describe('DataSets', () => {
       const errorButton = screen.getByText('Mock Upload Error');
       fireEvent.click(errorButton);
       
-      const { toast } = require('react-hot-toast');
+      const { toast } = await import('react-hot-toast');
       expect(toast.error).toHaveBeenCalledWith('Upload failed: Upload failed', {
         duration: 5000,
         position: 'top-right',
@@ -449,7 +463,7 @@ describe('DataSets', () => {
           expect(mockRefetch).toHaveBeenCalled();
         });
         
-        const { toast } = require('react-hot-toast');
+        const { toast } = await import('react-hot-toast');
         expect(toast.success).toHaveBeenCalledWith('Dataset "Test Dataset 1" deleted successfully');
       }
     });
@@ -496,7 +510,7 @@ describe('DataSets', () => {
           expect(mockRefetch).toHaveBeenCalled();
         });
         
-        const { toast } = require('react-hot-toast');
+        const { toast } = await import('react-hot-toast');
         expect(toast.success).toHaveBeenCalledWith('Dataset "Updated Name" updated successfully');
       }
     });

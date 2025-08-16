@@ -19,16 +19,16 @@ jest.mock('../../services/api', () => ({
 
 // Mock Heroicons
 jest.mock('@heroicons/react/24/outline', () => ({
-  UserIcon: ({ className, ...props }: any) => (
+  UserIcon: ({ className, ...props }: { className?: string; [key: string]: unknown }) => (
     <div data-testid="user-icon" className={className} {...props} />
   ),
-  ShieldCheckIcon: ({ className, ...props }: any) => (
+  ShieldCheckIcon: ({ className, ...props }: { className?: string; [key: string]: unknown }) => (
     <div data-testid="shield-check-icon" className={className} {...props} />
   ),
-  CogIcon: ({ className, ...props }: any) => (
+  CogIcon: ({ className, ...props }: { className?: string; [key: string]: unknown }) => (
     <div data-testid="cog-icon" className={className} {...props} />
   ),
-  BellIcon: ({ className, ...props }: any) => (
+  BellIcon: ({ className, ...props }: { className?: string; [key: string]: unknown }) => (
     <div data-testid="bell-icon" className={className} {...props} />
   ),
 }));
@@ -82,7 +82,7 @@ describe('AccountSettings', () => {
     },
   };
 
-  beforeEach(() => {
+  beforeEach(async () => {
     jest.clearAllMocks();
     
     // Default mock implementations
@@ -90,7 +90,7 @@ describe('AccountSettings', () => {
       user: mockUser,
     });
 
-    const { apiService } = require('../../services/api');
+    const { apiService } = await import('../../services/api');
     apiService.getUserProfile.mockResolvedValue(mockUserProfile);
     apiService.updateUserProfile.mockResolvedValue(mockUserProfile);
   });
@@ -145,9 +145,11 @@ describe('AccountSettings', () => {
   });
 
   describe('Loading State', () => {
-    it('shows loading state when fetching profile', () => {
-      const { apiService } = require('../../services/api');
-      apiService.getUserProfile.mockImplementation(() => new Promise(() => {})); // Never resolves
+    it('shows loading state when fetching profile', async () => {
+      const { apiService } = await import('../../services/api');
+      apiService.getUserProfile.mockImplementation(() => new Promise(() => {
+        // Never resolves - intentionally left empty for testing loading state
+      }));
       
       renderWithRouter(<AccountSettings />);
       
@@ -158,7 +160,7 @@ describe('AccountSettings', () => {
 
   describe('Error Handling', () => {
     it('shows error message when profile fetch fails', async () => {
-      const { apiService } = require('../../services/api');
+      const { apiService } = await import('../../services/api');
       apiService.getUserProfile.mockRejectedValue(new Error('Failed to fetch'));
       
       renderWithRouter(<AccountSettings />);
@@ -171,7 +173,7 @@ describe('AccountSettings', () => {
     });
 
     it('shows error message when save fails', async () => {
-      const { apiService } = require('../../services/api');
+      const { apiService } = await import('../../services/api');
       apiService.updateUserProfile.mockRejectedValue(new Error('Failed to save'));
       
       renderWithRouter(<AccountSettings />);
@@ -495,15 +497,17 @@ describe('AccountSettings', () => {
       const saveButton = screen.getByText('Save Changes');
       fireEvent.click(saveButton);
       
-      const { apiService } = require('../../services/api');
+      const { apiService } = await import('../../services/api');
       await waitFor(() => {
         expect(apiService.updateUserProfile).toHaveBeenCalledTimes(1);
       });
     });
 
     it('shows loading state during save', async () => {
-      const { apiService } = require('../../services/api');
-      apiService.updateUserProfile.mockImplementation(() => new Promise(() => {})); // Never resolves
+      const { apiService } = await import('../../services/api');
+      apiService.updateUserProfile.mockImplementation(() => new Promise(() => {
+        // Never resolves - intentionally left empty for testing loading state
+      }));
       
       const saveButton = screen.getByText('Save Changes');
       fireEvent.click(saveButton);
@@ -525,7 +529,7 @@ describe('AccountSettings', () => {
       const saveButton = screen.getByText('Save Changes');
       fireEvent.click(saveButton);
       
-      const { apiService } = require('../../services/api');
+      const { apiService } = await import('../../services/api');
       await waitFor(() => {
         expect(apiService.updateUserProfile).toHaveBeenCalledWith(
           expect.objectContaining({
@@ -552,7 +556,7 @@ describe('AccountSettings', () => {
       const saveButton = screen.getByText('Save Changes');
       fireEvent.click(saveButton);
       
-      const { apiService } = require('../../services/api');
+      const { apiService } = await import('../../services/api');
       await waitFor(() => {
         expect(apiService.updateUserProfile).toHaveBeenCalledWith(
           expect.objectContaining({
@@ -588,7 +592,7 @@ describe('AccountSettings', () => {
     });
 
     it('handles empty profile data gracefully', async () => {
-      const { apiService } = require('../../services/api');
+      const { apiService } = await import('../../services/api');
       apiService.getUserProfile.mockResolvedValue(null);
       
       renderWithRouter(<AccountSettings />);

@@ -23,7 +23,7 @@ describe('ErrorBoundary', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     // Suppress console.error for expected errors in tests
-    jest.spyOn(console, 'error').mockImplementation(() => {});
+    jest.spyOn(console, 'error').mockImplementation(() => {}); // eslint-disable-line @typescript-eslint/no-empty-function
   });
 
   afterEach(() => {

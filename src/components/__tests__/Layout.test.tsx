@@ -50,7 +50,7 @@ describe('Layout', () => {
     mockLogger.info = jest.fn();
     
     // Mock console.error to suppress React warnings
-    jest.spyOn(console, 'error').mockImplementation(() => {});
+    jest.spyOn(console, 'error').mockImplementation(() => {}); // eslint-disable-line @typescript-eslint/no-empty-function
   });
 
   afterEach(() => {

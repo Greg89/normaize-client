@@ -16,7 +16,7 @@ jest.mock('./components/LoadingSpinner', () => ({
 
 jest.mock('./components/Layout', () => ({
   __esModule: true,
-  default: ({ children }: any) => <div data-testid="layout">{children}</div>,
+  default: ({ children }: { children: React.ReactNode }) => <div data-testid="layout">{children}</div>,
 }));
 
 jest.mock('./pages/Dashboard', () => ({
@@ -50,15 +50,15 @@ jest.mock('./pages/AccountSettings', () => ({
 }));
 
 jest.mock('./components/ApiInitializer', () => ({
-  ApiInitializer: ({ children }: any) => <div data-testid="api-initializer">{children}</div>,
+  ApiInitializer: ({ children }: { children: React.ReactNode }) => <div data-testid="api-initializer">{children}</div>,
 }));
 
 jest.mock('./components/SentryErrorBoundary', () => ({
-  SentryErrorBoundary: ({ children }: any) => <div data-testid="sentry-error-boundary">{children}</div>,
+  SentryErrorBoundary: ({ children }: { children: React.ReactNode }) => <div data-testid="sentry-error-boundary">{children}</div>,
 }));
 
 jest.mock('./components/GlobalErrorBoundary', () => ({
-  GlobalErrorBoundary: ({ children }: any) => <div data-testid="global-error-boundary">{children}</div>,
+  GlobalErrorBoundary: ({ children }: { children: React.ReactNode }) => <div data-testid="global-error-boundary">{children}</div>,
 }));
 
 // Note: We'll test the button click but can't easily mock window.location.reload in Jest

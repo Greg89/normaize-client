@@ -97,8 +97,8 @@ export class ValidationUtils {
 
   // Phone number validation (basic)
   static isValidPhoneNumber(phone: string): boolean {
-    const phoneRegex = /^[\+]?[1-9][\d]{0,15}$/;
-    return phoneRegex.test(phone.replace(/[\s\-\(\)]/g, ''));
+    const phoneRegex = /^[+]?[1-9][\d]{0,15}$/;
+    return phoneRegex.test(phone.replace(/[\s\-()]/g, ''));
   }
 
   // Password strength validation

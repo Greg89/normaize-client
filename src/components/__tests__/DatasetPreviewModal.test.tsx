@@ -2,7 +2,11 @@ import React from 'react';
 import { render, screen } from '@testing-library/react';
 
 // Create a simple mock component that we can test reliably
-const MockDatasetPreviewModal = ({ dataset, isOpen, onClose }: any) => {
+const MockDatasetPreviewModal = ({ dataset, isOpen, onClose }: { 
+  dataset: { name: string; fileName: string; fileType: string; rowCount: number; columnCount: number } | null; 
+  isOpen: boolean; 
+  onClose: () => void 
+}) => {
   if (!isOpen) return null;
   if (!dataset) return null;
   

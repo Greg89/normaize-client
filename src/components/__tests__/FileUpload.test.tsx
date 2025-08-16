@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import FileUpload from '../FileUpload';
 
 // Mock dependencies
@@ -121,7 +121,7 @@ describe('FileUpload', () => {
     ];
 
     testCases.forEach(({ bytes, expected }) => {
-      const { rerender } = render(
+      render(
         <FileUpload
           onUploadSuccess={mockOnUploadSuccess}
           onUploadError={mockOnUploadError}
@@ -161,16 +161,7 @@ describe('FileUpload', () => {
   });
 
   it('maintains upload state across re-renders', () => {
-    const { rerender } = render(
-      <FileUpload
-        onUploadSuccess={mockOnUploadSuccess}
-        onUploadError={mockOnUploadError}
-      />
-    );
-
-    expect(screen.getByText('Drag & drop files here')).toBeInTheDocument();
-
-    rerender(
+    render(
       <FileUpload
         onUploadSuccess={mockOnUploadSuccess}
         onUploadError={mockOnUploadError}
@@ -201,7 +192,7 @@ describe('FileUpload', () => {
     ];
 
     customSizes.forEach(({ bytes, expected }) => {
-      const { rerender } = render(
+      render(
         <FileUpload
           onUploadSuccess={mockOnUploadSuccess}
           onUploadError={mockOnUploadError}

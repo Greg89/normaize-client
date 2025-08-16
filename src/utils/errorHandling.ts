@@ -1,4 +1,3 @@
-import { ApiError } from '../types';
 import { logger } from './logger';
 import toast from 'react-hot-toast';
 
@@ -75,8 +74,8 @@ export class ErrorHandler {
       message = error;
       code = 'STRING_ERROR';
     } else if (error && typeof error === 'object' && 'message' in error) {
-      message = String((error as any).message);
-      code = (error as any).code || 'OBJECT_ERROR';
+      message = String((error as { message: unknown; code?: string }).message);
+      code = (error as { message: unknown; code?: string }).code || 'OBJECT_ERROR';
     } else {
       message = 'An unexpected error occurred';
       code = ErrorType.UNKNOWN;
@@ -174,7 +173,7 @@ export class ErrorHandler {
   }
 
   private static showUserMessage(errorInfo: ErrorInfo): void {
-    let message = this.getUserFriendlyMessage(errorInfo);
+    const message = this.getUserFriendlyMessage(errorInfo);
     
     // Don't show toast for low severity errors
     if (errorInfo.severity === ErrorSeverity.LOW) {
@@ -233,7 +232,7 @@ export class ErrorHandler {
       });
     } catch (trackingError) {
       // Don't let tracking errors interfere with main error handling
-      console.warn('Failed to track error metrics:', trackingError);
+      logger.warn('Failed to track error metrics:', trackingError);
     }
   }
 

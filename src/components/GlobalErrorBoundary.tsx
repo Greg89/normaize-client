@@ -70,7 +70,7 @@ export class GlobalErrorBoundary extends React.Component<Props, State> {
                 Something went wrong
               </h2>
               <p className="text-gray-600 mb-4">
-                We're sorry, but something unexpected happened. Our team has been notified.
+                We&apos;re sorry, but something unexpected happened. Our team has been notified.
               </p>
               <div className="space-y-3">
                 <button

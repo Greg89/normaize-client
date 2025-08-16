@@ -12,12 +12,12 @@ jest.mock('../../utils/auth0-config');
 
 // Mock the SessionPersistence component
 jest.mock('../SessionPersistence', () => ({
-  SessionPersistence: ({ children }: any) => <div data-testid="session-persistence">{children}</div>,
+  SessionPersistence: ({ children }: { children: React.ReactNode }) => <div data-testid="session-persistence">{children}</div>,
 }));
 
 // Mock Auth0Provider to avoid actual Auth0 initialization
 jest.mock('@auth0/auth0-react', () => ({
-  Auth0Provider: ({ children }: any) => <div data-testid="auth0-provider">{children}</div>,
+  Auth0Provider: ({ children }: { children: React.ReactNode }) => <div data-testid="auth0-provider">{children}</div>,
   useAuth0: () => ({
     user: { sub: 'user-123', name: 'Test User' },
     isAuthenticated: true,
@@ -49,8 +49,8 @@ describe('Auth0ProviderWrapper', () => {
     mockLogger.debug = jest.fn();
     
     // Mock Sentry methods
-    (setSentryUser as jest.Mock).mockImplementation(() => {});
-    (clearSentryUser as jest.Mock).mockImplementation(() => {});
+    (setSentryUser as jest.Mock).mockImplementation(() => {}); // eslint-disable-line @typescript-eslint/no-empty-function
+    (clearSentryUser as jest.Mock).mockImplementation(() => {}); // eslint-disable-line @typescript-eslint/no-empty-function
     
     // Mock window.history.replaceState
     Object.defineProperty(window, 'history', {

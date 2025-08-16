@@ -57,7 +57,7 @@ global.cancelAnimationFrame = jest.fn();
 const originalConsoleWarn = console.warn;
 const originalConsoleError = console.error;
 
-console.warn = (...args: any[]) => {
+console.warn = (...args: unknown[]) => {
   // Suppress React Router deprecation warnings
   if (args[0] && typeof args[0] === 'string' && args[0].includes('React Router')) {
     return;
@@ -65,7 +65,7 @@ console.warn = (...args: any[]) => {
   originalConsoleWarn.call(console, ...args);
 };
 
-console.error = (...args: any[]) => {
+console.error = (...args: unknown[]) => {
   // Suppress jsdom navigation errors
   if (args[0] && typeof args[0] === 'string' && args[0].includes('Not implemented: navigation')) {
     return;

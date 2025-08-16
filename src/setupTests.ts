@@ -19,10 +19,10 @@ Object.defineProperty(window, 'matchMedia', {
 // Mock IntersectionObserver
 global.IntersectionObserver = class IntersectionObserver {
   root: Element | null = null;
-  rootMargin: string = '';
-  thresholds: ReadonlyArray<number> = [];
+  rootMargin = '';
+  thresholds: readonly number[] = [];
   
-  constructor() {}
+  constructor() {} // eslint-disable-line @typescript-eslint/no-empty-function
   observe() { return null; }
   unobserve() { return null; }
   disconnect() { return null; }
@@ -31,7 +31,7 @@ global.IntersectionObserver = class IntersectionObserver {
 
 // Mock ResizeObserver
 global.ResizeObserver = class ResizeObserver {
-  constructor() {}
+  constructor() {} // eslint-disable-line @typescript-eslint/no-empty-function
   observe() { return null; }
   unobserve() { return null; }
   disconnect() { return null; }
@@ -52,7 +52,7 @@ const originalConsoleError = console.error;
 const originalConsoleWarn = console.warn;
 
 beforeAll(() => {
-  console.error = (...args: any[]) => {
+  console.error = (...args: unknown[]) => {
     if (
       typeof args[0] === 'string' &&
       args[0].includes('Warning: ReactDOM.render is no longer supported')
@@ -62,7 +62,7 @@ beforeAll(() => {
     originalConsoleError.call(console, ...args);
   };
   
-  console.warn = (...args: any[]) => {
+  console.warn = (...args: unknown[]) => {
     if (
       typeof args[0] === 'string' &&
       args[0].includes('Warning: componentWillReceiveProps has been renamed')

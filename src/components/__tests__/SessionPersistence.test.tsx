@@ -3,6 +3,24 @@ import { render, waitFor } from '@testing-library/react';
 import { SessionPersistence } from '../SessionPersistence';
 import { useAuth0 } from '@auth0/auth0-react';
 
+// Define proper types for Auth0 mock
+interface MockAuth0Return {
+  isAuthenticated: boolean;
+  isLoading: boolean;
+  user?: { sub: string; name: string; email: string };
+  error?: Error;
+  loginWithRedirect?: jest.Mock;
+  logout?: jest.Mock;
+  getAccessTokenSilently: jest.Mock;
+  getAccessTokenWithPopup?: jest.Mock;
+  getIdTokenClaims?: jest.Mock;
+  handleRedirectCallback?: jest.Mock;
+  checkSession?: jest.Mock;
+  buildAuthorizeUrl?: jest.Mock;
+  buildLogoutUrl?: jest.Mock;
+  loginWithPopup?: jest.Mock;
+}
+
 // Mock the useAuth0 hook
 jest.mock('@auth0/auth0-react');
 const mockUseAuth0 = useAuth0 as jest.MockedFunction<typeof useAuth0>;
@@ -38,7 +56,7 @@ describe('SessionPersistence', () => {
       buildAuthorizeUrl: jest.fn(),
       buildLogoutUrl: jest.fn(),
       loginWithPopup: jest.fn(),
-    } as any);
+    } as MockAuth0Return);
   });
 
   it('renders children correctly', () => {
@@ -70,7 +88,7 @@ describe('SessionPersistence', () => {
       isAuthenticated: false,
       isLoading: false,
       getAccessTokenSilently: mockGetAccessTokenSilently,
-    } as any);
+    } as MockAuth0Return);
 
     render(
       <SessionPersistence>
@@ -91,7 +109,7 @@ describe('SessionPersistence', () => {
       isAuthenticated: false,
       isLoading: true,
       getAccessTokenSilently: mockGetAccessTokenSilently,
-    } as any);
+    } as MockAuth0Return);
 
     render(
       <SessionPersistence>
@@ -107,7 +125,7 @@ describe('SessionPersistence', () => {
       isAuthenticated: true,
       isLoading: false,
       getAccessTokenSilently: mockGetAccessTokenSilently,
-    } as any);
+    } as MockAuth0Return);
 
     render(
       <SessionPersistence>
@@ -123,7 +141,7 @@ describe('SessionPersistence', () => {
       isAuthenticated: false,
       isLoading: false,
       getAccessTokenSilently: mockGetAccessTokenSilently,
-    } as any);
+    } as MockAuth0Return);
 
     const { rerender } = render(
       <SessionPersistence>
@@ -152,7 +170,7 @@ describe('SessionPersistence', () => {
       isAuthenticated: false,
       isLoading: false,
       getAccessTokenSilently: mockGetAccessTokenSilently,
-    } as any);
+    } as MockAuth0Return);
 
     const { rerender } = render(
       <SessionPersistence>
@@ -169,7 +187,7 @@ describe('SessionPersistence', () => {
       isAuthenticated: true,
       isLoading: false,
       getAccessTokenSilently: mockGetAccessTokenSilently,
-    } as any);
+    } as MockAuth0Return);
 
     rerender(
       <SessionPersistence>
@@ -185,7 +203,7 @@ describe('SessionPersistence', () => {
       isAuthenticated: false,
       isLoading: false,
       getAccessTokenSilently: mockGetAccessTokenSilently,
-    } as any);
+    } as MockAuth0Return);
 
     rerender(
       <SessionPersistence>
@@ -200,13 +218,13 @@ describe('SessionPersistence', () => {
   });
 
   it('handles silent authentication errors gracefully', async () => {
-    const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {}); // eslint-disable-line @typescript-eslint/no-empty-function
     
     mockUseAuth0.mockReturnValue({
       isAuthenticated: false,
       isLoading: false,
       getAccessTokenSilently: jest.fn().mockRejectedValue(new Error('Auth failed')),
-    } as any);
+    } as MockAuth0Return);
 
     render(
       <SessionPersistence>
@@ -227,7 +245,7 @@ describe('SessionPersistence', () => {
       isAuthenticated: false,
       isLoading: true,
       getAccessTokenSilently: mockGetAccessTokenSilently,
-    } as any);
+    } as MockAuth0Return);
 
     const { unmount } = render(
       <SessionPersistence>
