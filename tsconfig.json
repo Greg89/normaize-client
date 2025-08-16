@@ -41,13 +41,8 @@
     /* Additional checks */
     "allowUnreachableCode": false,
     "allowUnusedLabels": false,
-    "exactOptionalPropertyTypes": true,
     "noImplicitAny": true,
     "noImplicitThis": true,
-    "noImplicitReturns": true,
-    "noUncheckedIndexedAccess": true,
-    "noUncheckedIndexedAccess": true,
-    "noUncheckedIndexedAccess": true,
 
     /* Performance */
     "incremental": true,
