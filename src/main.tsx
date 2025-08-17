@@ -4,7 +4,7 @@ import { BrowserRouter } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
 import { Auth0ProviderWrapper } from './components/Auth0Provider'
 import { setupGlobalErrorHandlers } from './utils/globalErrorHandlers'
-import { performanceMonitor } from './utils/performanceMonitor'
+// Performance monitoring is automatically initialized in the PerformanceMonitor constructor
 import { initSentry } from './utils/sentry'
 import App from './App'
 import './index.css'
@@ -12,9 +12,7 @@ import './index.css'
 // Initialize Sentry, global error handlers and performance monitoring
 initSentry();
 setupGlobalErrorHandlers();
-performanceMonitor.monitorPageLoad();
-performanceMonitor.monitorLongTasks();
-performanceMonitor.monitorMemory();
+// Performance monitoring is automatically initialized in the PerformanceMonitor constructor
 
 const rootElement = document.getElementById('root');
 if (rootElement) {

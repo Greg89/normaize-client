@@ -2,8 +2,8 @@ import * as Sentry from '@sentry/react';
 import { logger } from './logger';
 
 export const initSentry = (): void => {
-  const dsn = import.meta.env.VITE_SENTRY_DSN;
-  const environment = import.meta.env.VITE_NODE_ENV || 'development';
+  const dsn = import.meta.env['VITE_SENTRY_DSN'];
+  const environment = import.meta.env['VITE_NODE_ENV'] || 'development';
   
   // Only initialize Sentry in production and beta environments
   if (!dsn || environment === 'development') {
@@ -21,10 +21,10 @@ export const initSentry = (): void => {
     replaysOnErrorSampleRate: 1.0, // Sample 100% of sessions with errors
 
     // Environment
-    environment: import.meta.env.VITE_NODE_ENV || 'development',
+    environment: import.meta.env['VITE_NODE_ENV'] || 'development',
     
     // Release tracking
-    release: import.meta.env.VITE_APP_VERSION || '1.0.0',
+    release: import.meta.env['VITE_APP_VERSION'] || '1.0.0',
     
     // Before sending to Sentry, also log to our Seq system
     beforeSend(event, hint) {
@@ -57,11 +57,19 @@ export const initSentry = (): void => {
 // Set user context for Sentry (call this when user logs in)
 export const setSentryUser = (user: { sub?: string; email?: string; name?: string }): void => {
   if (user.sub) {
-    Sentry.setUser({
+    const userData: { id: string; email?: string; username?: string } = {
       id: user.sub,
-      email: user.email,
-      username: user.name,
-    });
+    };
+    
+    if (user.email !== undefined) {
+      userData.email = user.email;
+    }
+    
+    if (user.name !== undefined) {
+      userData.username = user.name;
+    }
+    
+    Sentry.setUser(userData);
     
     // Also set in our logger for correlation
     logger.setUserId(user.sub);
@@ -89,7 +97,7 @@ export const captureSentryEvent = (
   level: Sentry.SeverityLevel = 'info',
   extra?: Record<string, unknown>
 ): void => {
-  Sentry.captureMessage(message, { level, extra });
+  Sentry.captureMessage(message, { level, extra: extra || {} });
   
   // Also log to our system for correlation
   logger.info(`Sentry Event: ${message}`, {

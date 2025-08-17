@@ -85,7 +85,9 @@ const FileUpload: React.FC<FileUploadProps> = ({
 
     for (let i = 0; i < acceptedFiles.length; i++) {
       const file = acceptedFiles[i];
-      await uploadFile(file, newUploads.length - acceptedFiles.length + i);
+      if (file) {
+        await uploadFile(file, newUploads.length - acceptedFiles.length + i);
+      }
     }
   }, [uploadFile]);
 

@@ -1,101 +1,244 @@
 import { logger } from './logger';
 
-export class PerformanceMonitor {
-  private static instance: PerformanceMonitor;
-  private marks: Map<string, number> = new Map();
+interface PerformanceMetrics {
+  pageLoadTime: number;
+  domContentLoaded: number;
+  firstContentfulPaint?: number;
+  largestContentfulPaint?: number;
+  cumulativeLayoutShift?: number;
+  firstInputDelay?: number;
+  timeToInteractive?: number;
+}
 
-  static getInstance(): PerformanceMonitor {
-    if (!PerformanceMonitor.instance) {
-      PerformanceMonitor.instance = new PerformanceMonitor();
-    }
-    return PerformanceMonitor.instance;
+// Custom navigation timing interface for additional metrics
+interface NavigationTiming {
+  navigationStart: number;
+  loadEventEnd: number;
+  domContentLoadedEventEnd: number;
+  firstPaint?: number;
+  firstContentfulPaint?: number;
+  pageLoadTime: number;
+  domContentLoaded: number;
+}
+
+class PerformanceMonitor {
+  private navigationObserver: PerformanceObserver | null = null;
+  private paintObserver: PerformanceObserver | null = null;
+  private layoutShiftObserver: PerformanceObserver | null = null;
+  private firstInputObserver: PerformanceObserver | null = null;
+
+  constructor() {
+    this.initializeObservers();
+    this.trackPageLoad();
   }
 
-  // Start timing an operation
-  startTimer(operation: string): void {
-    this.marks.set(operation, performance.now());
-  }
-
-  // End timing an operation and log it
-  endTimer(operation: string, additionalData?: Record<string, unknown>): void {
-    const startTime = this.marks.get(operation);
-    if (startTime) {
-      const duration = performance.now() - startTime;
-      this.marks.delete(operation);
-      
-      logger.info(`Performance: ${operation}`, {
-        actionType: 'performance',
-        operation,
-        duration: Math.round(duration),
-        ...additionalData
-      });
-    }
-  }
-
-  // Monitor page load performance
-  monitorPageLoad(): void {
-    if (typeof window !== 'undefined' && 'performance' in window) {
-      window.addEventListener('load', () => {
-        setTimeout(() => {
-          const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
-          if (navigation) {
-            logger.info('Page Load Performance', {
-              actionType: 'performance',
-              operation: 'page_load',
-              domContentLoaded: Math.round(navigation.domContentLoadedEventEnd - navigation.domContentLoadedEventStart),
-              loadComplete: Math.round(navigation.loadEventEnd - navigation.loadEventStart),
-              totalLoadTime: Math.round(navigation.loadEventEnd - navigation.fetchStart),
-              url: window.location.href,
-            });
-          }
-        }, 0);
-      });
-    }
-  }
-
-  // Monitor long tasks (blocking operations)
-  monitorLongTasks(): void {
-    if ('PerformanceObserver' in window) {
-      try {
-        const observer = new PerformanceObserver((list) => {
-          for (const entry of list.getEntries()) {
-            const longTask = entry as PerformanceEntry;
-            if (longTask.duration > 50) { // Log tasks longer than 50ms
-              logger.warn('Long Task Detected', {
-                actionType: 'performance',
-                operation: 'long_task',
-                duration: Math.round(longTask.duration),
-                startTime: Math.round(longTask.startTime),
-                name: longTask.name,
-                entryType: longTask.entryType,
-                url: window.location.href,
-              });
+  private initializeObservers(): void {
+    try {
+      // Navigation timing observer
+      if ('PerformanceObserver' in window) {
+        this.navigationObserver = new PerformanceObserver((list) => {
+          const entries = list.getEntries();
+          entries.forEach((entry) => {
+            if (entry.entryType === 'navigation') {
+              this.handleNavigationTiming(entry as PerformanceNavigationTiming);
             }
-          }
+          });
         });
-        
-        observer.observe({ entryTypes: ['longtask'] });
-      } catch (error) {
-        // PerformanceObserver might not be supported in all browsers
-        logger.debug('PerformanceObserver not supported');
+        this.navigationObserver.observe({ entryTypes: ['navigation'] });
+
+        // Paint timing observer
+        this.paintObserver = new PerformanceObserver((list) => {
+          const entries = list.getEntries();
+          entries.forEach((entry) => {
+            if (entry.name === 'first-paint') {
+              this.trackFirstPaint(entry.startTime);
+            }
+            if (entry.name === 'first-contentful-paint') {
+              this.trackFirstContentfulPaint(entry.startTime);
+            }
+          });
+        });
+        this.paintObserver.observe({ entryTypes: ['paint'] });
+
+        // Layout shift observer
+        this.layoutShiftObserver = new PerformanceObserver((list) => {
+          let cumulativeLayoutShift = 0;
+          const entries = list.getEntries();
+          entries.forEach((entry) => {
+            if (!(entry as { hadRecentInput?: boolean }).hadRecentInput) {
+              cumulativeLayoutShift += (entry as unknown as { value: number }).value;
+            }
+          });
+          this.trackCumulativeLayoutShift(cumulativeLayoutShift);
+        });
+        this.layoutShiftObserver.observe({ entryTypes: ['layout-shift'] });
+
+        // First input delay observer
+        this.firstInputObserver = new PerformanceObserver((list) => {
+          const entries = list.getEntries();
+          entries.forEach((entry) => {
+            const eventEntry = entry as PerformanceEventTiming;
+            this.trackFirstInputDelay(eventEntry.processingStart - eventEntry.startTime);
+          });
+        });
+        this.firstInputObserver.observe({ entryTypes: ['first-input'] });
+      }
+    } catch (error) {
+      logger.warn('Performance monitoring initialization failed', { error: error instanceof Error ? error.message : String(error) });
+    }
+  }
+
+  private trackPageLoad(): void {
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => {
+        this.measurePageLoad();
+      });
+    } else {
+      this.measurePageLoad();
+    }
+
+    window.addEventListener('load', () => {
+      this.measurePageLoad();
+    });
+  }
+
+  private measurePageLoad(): void {
+    if ('performance' in window) {
+      const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
+      if (navigation) {
+        const metrics: PerformanceMetrics = {
+          pageLoadTime: navigation.loadEventEnd - performance.timeOrigin,
+          domContentLoaded: navigation.domContentLoadedEventEnd - performance.timeOrigin,
+        };
+
+        // Log performance metrics
+        logger.info('Page Load Performance Metrics', {
+          ...metrics,
+          url: window.location.href,
+          userAgent: navigator.userAgent,
+        });
+
+        // Track in analytics if available
+        this.trackPerformanceAnalytics(metrics);
       }
     }
   }
 
-  // Monitor memory usage (if available)
-  monitorMemory(): void {
-    if ('memory' in performance) {
-      const memory = (performance as unknown as { memory: { usedJSHeapSize: number; totalJSHeapSize: number; jsHeapSizeLimit: number } }).memory;
-      logger.info('Memory Usage', {
-        actionType: 'performance',
-        operation: 'memory_usage',
-        usedJSHeapSize: Math.round(memory.usedJSHeapSize / 1024 / 1024), // MB
-        totalJSHeapSize: Math.round(memory.totalJSHeapSize / 1024 / 1024), // MB
-        jsHeapSizeLimit: Math.round(memory.jsHeapSizeLimit / 1024 / 1024), // MB
-        url: window.location.href,
+  private handleNavigationTiming(entry: PerformanceNavigationTiming): void {
+    const metrics: NavigationTiming = {
+      navigationStart: performance.timeOrigin,
+      loadEventEnd: entry.loadEventEnd,
+      domContentLoadedEventEnd: entry.domContentLoadedEventEnd,
+      pageLoadTime: entry.loadEventEnd - performance.timeOrigin,
+      domContentLoaded: entry.domContentLoadedEventEnd - performance.timeOrigin,
+    };
+
+    logger.info('Navigation Timing Metrics', metrics as unknown as Record<string, unknown>);
+  }
+
+  private trackFirstPaint(startTime: number): void {
+    logger.info('First Paint', { startTime });
+  }
+
+  private trackFirstContentfulPaint(startTime: number): void {
+    logger.info('First Contentful Paint', { startTime });
+  }
+
+  private trackCumulativeLayoutShift(value: number): void {
+    logger.info('Cumulative Layout Shift', { value });
+  }
+
+  private trackFirstInputDelay(delay: number): void {
+    logger.info('First Input Delay', { delay });
+  }
+
+  private trackPerformanceAnalytics(metrics: PerformanceMetrics): void {
+    // Send to analytics service if configured
+    if (typeof window !== 'undefined' && (window as unknown as { gtag?: unknown }).gtag) {
+      const gtag = (window as unknown as { gtag: (event: string, name: string, params: Record<string, unknown>) => void }).gtag;
+      gtag('event', 'performance_metrics', {
+        event_category: 'performance',
+        page_load_time: metrics.pageLoadTime,
+        dom_content_loaded: metrics.domContentLoaded,
+        page: window.location.pathname,
       });
+    }
+  }
+
+  // Track custom performance marks
+  mark(name: string): void {
+    if ('performance' in window) {
+      performance.mark(name);
+      logger.debug('Performance mark created', { name });
+    }
+  }
+
+  // Measure time between two marks
+  measure(name: string, startMark: string, endMark: string): void {
+    if ('performance' in window) {
+      try {
+        const measure = performance.measure(name, startMark, endMark);
+        logger.info('Performance measure', {
+          name,
+          duration: measure.duration,
+          startMark,
+          endMark,
+        });
+      } catch (error) {
+        logger.warn('Failed to create performance measure', { name, error: error instanceof Error ? error.message : String(error) });
+      }
+    }
+  }
+
+  // Track component render time
+  trackComponentRender(componentName: string, renderTime: number): void {
+    logger.info('Component Render Performance', {
+      component: componentName,
+      renderTime,
+      url: window.location.href,
+    });
+  }
+
+  // Track API call performance
+  trackApiPerformance(endpoint: string, duration: number, status: number): void {
+    logger.info('API Performance', {
+      endpoint,
+      duration,
+      status,
+      url: window.location.href,
+    });
+  }
+
+  // Get current performance metrics
+  getCurrentMetrics(): PerformanceMetrics | null {
+    if ('performance' in window) {
+      const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
+      if (navigation) {
+        return {
+          pageLoadTime: navigation.loadEventEnd - performance.timeOrigin,
+          domContentLoaded: navigation.domContentLoadedEventEnd - performance.timeOrigin,
+        };
+      }
+    }
+    return null;
+  }
+
+  // Cleanup observers
+  disconnect(): void {
+    if (this.navigationObserver) {
+      this.navigationObserver.disconnect();
+    }
+    if (this.paintObserver) {
+      this.paintObserver.disconnect();
+    }
+    if (this.layoutShiftObserver) {
+      this.layoutShiftObserver.disconnect();
+    }
+    if (this.firstInputObserver) {
+      this.firstInputObserver.disconnect();
     }
   }
 }
 
-export const performanceMonitor = PerformanceMonitor.getInstance(); 
+export const performanceMonitor = new PerformanceMonitor();
+export default performanceMonitor; 

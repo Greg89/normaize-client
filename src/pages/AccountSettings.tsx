@@ -29,7 +29,7 @@ export default function AccountSettings() {
   const [profile, setProfile] = useState({
     name: user?.name || '',
     email: user?.email || '',
-    avatar: avatarOptions[0].url
+    avatar: avatarOptions[0]?.url || '/avatars/default.png'
   })
 
   // UI state for user settings
@@ -98,7 +98,7 @@ export default function AccountSettings() {
          const newProfile = {
            name: userProfile.name || user?.name || '',
            email: userProfile.email || user?.email || '',
-           avatar: userProfile.picture || avatarOptions[0].url
+           avatar: userProfile.picture || avatarOptions[0]?.url || '/avatars/default.png'
          }
          setProfile(newProfile)
          
@@ -137,7 +137,7 @@ export default function AccountSettings() {
        const newProfile = {
          name: updatedProfile.name || profile.name, // Fallback to current profile name if server doesn't return it
          email: updatedProfile.email || profile.email, // Fallback to current profile email if server doesn't return it
-         avatar: updatedProfile.picture || profile.avatar || avatarOptions[0].url
+                   avatar: updatedProfile.picture || profile.avatar || avatarOptions[0]?.url || '/avatars/default.png'
        }
        setProfile(newProfile)
        
@@ -222,7 +222,7 @@ export default function AccountSettings() {
 
       {/* Tab Navigation */}
       <div className="border-b border-gray-200">
-        <nav className="-mb-px flex space-x-8">
+        <nav className="-mb-px flex space-x-4">
           {tabs.map((tab) => {
             const Icon = tab.icon
             return (

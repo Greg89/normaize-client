@@ -30,6 +30,15 @@ module.exports = {
     'react/react-in-jsx-scope': 'off',
     'react/prop-types': 'off',
   },
+  overrides: [
+    {
+      files: ['**/*.test.ts', '**/*.test.tsx', '**/*.spec.ts', '**/*.spec.tsx', '**/setupJest.ts', '**/setupTests.ts'],
+      rules: {
+        'no-console': 'off',
+        '@typescript-eslint/no-var-requires': 'off',
+      },
+    },
+  ],
   settings: {
     react: {
       version: 'detect',

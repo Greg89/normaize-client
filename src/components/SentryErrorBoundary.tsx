@@ -13,8 +13,8 @@ interface State {
   error?: Error;
 }
 
-class SentryErrorBoundaryClass extends React.Component<Props & { userId?: string }, State> {
-  constructor(props: Props & { userId?: string }) {
+class SentryErrorBoundaryClass extends React.Component<Props & { userId?: string | undefined }, State> {
+  constructor(props: Props & { userId?: string | undefined }) {
     super(props);
     this.state = { hasError: false };
   }
@@ -23,7 +23,7 @@ class SentryErrorBoundaryClass extends React.Component<Props & { userId?: string
     return { hasError: true, error };
   }
 
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+  override componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     // Log to our Seq system with full context
     logger.error('React Error Boundary caught an error', {
       componentStack: errorInfo.componentStack,
@@ -39,7 +39,7 @@ class SentryErrorBoundaryClass extends React.Component<Props & { userId?: string
     // The beforeSend hook in sentry.ts will also log to Seq
   }
 
-  render() {
+  override render() {
     if (this.state.hasError) {
       if (this.props.fallback) {
         return this.props.fallback;
@@ -92,7 +92,7 @@ export const SentryErrorBoundary: React.FC<Props> = ({ children, fallback }) => 
   }, [user?.sub]);
 
   return (
-    <SentryErrorBoundaryClass userId={user?.sub} fallback={fallback}>
+    <SentryErrorBoundaryClass userId={user?.sub || undefined} fallback={fallback}>
       {children}
     </SentryErrorBoundaryClass>
   );

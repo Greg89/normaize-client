@@ -12,7 +12,7 @@ interface State {
   error?: Error;
 }
 
-class ErrorBoundaryClass extends Component<Props & { userId?: string }, State> {
+class ErrorBoundaryClass extends Component<Props & { userId?: string | undefined }, State> {
   constructor(props: Props & { userId?: string }) {
     super(props);
     this.state = { hasError: false };
@@ -22,7 +22,7 @@ class ErrorBoundaryClass extends Component<Props & { userId?: string }, State> {
     return { hasError: true, error };
   }
 
-  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+  override componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     // Log the error with full context
     logger.error(
       'React Error Boundary caught an error',
@@ -39,7 +39,7 @@ class ErrorBoundaryClass extends Component<Props & { userId?: string }, State> {
     );
   }
 
-  render() {
+  override render() {
     if (this.state.hasError) {
       if (this.props.fallback) {
         return this.props.fallback;

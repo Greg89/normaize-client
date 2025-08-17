@@ -114,7 +114,8 @@ export default function DatasetPreviewModal({
     }
     // Fallback to extracting from data
     if (!Array.isArray(previewData) || previewData.length === 0) return [];
-    return Object.keys(previewData[0]);
+    const firstRow = previewData[0];
+    return firstRow ? Object.keys(firstRow) : [];
   };
 
   const formatCellValue = (value: string | number | boolean | null): string => {
@@ -271,12 +272,12 @@ export default function DatasetPreviewModal({
                                       key={colIndex}
                                       className="px-6 py-4 whitespace-nowrap text-sm text-gray-900"
                                     >
-                                      <div 
-                                        className="max-w-xs truncate font-mono text-xs" 
-                                        title={formatCellValue(row[header])}
-                                      >
-                                        {formatCellValue(row[header])}
-                                      </div>
+                                                                             <div 
+                                         className="max-w-xs truncate font-mono text-xs" 
+                                         title={formatCellValue(row[header] ?? null)}
+                                       >
+                                         {formatCellValue(row[header] ?? null)}
+                                       </div>
                                     </td>
                                   ))}
                                 </tr>
