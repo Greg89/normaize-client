@@ -168,7 +168,6 @@ export default function DatasetDetailsModal({
                     title="Click to set retention expiry date"
                     disabled={loading}
                   />
-                  <span className="text-xs text-gray-500">(click to edit)</span>
                 </div>
               </div>
             </div>
