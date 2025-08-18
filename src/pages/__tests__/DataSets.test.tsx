@@ -48,7 +48,7 @@ jest.mock('../../components/DatasetDetailsModal', () => ({
     dataset?: { name: string }; 
     isOpen: boolean; 
     onClose: () => void; 
-    onSave: (data: { name: string; description: string }) => void; 
+    onSave: (data: { name: string; description: string; retentionExpiryDate?: string }) => void; 
     loading: boolean 
   }) => {
     if (!isOpen) return null;
@@ -156,8 +156,21 @@ describe('DataSets', () => {
       loading: false,
     });
 
+    const mockUpdateDataSet = jest.fn().mockResolvedValue({
+      id: 1,
+      name: 'Updated Test Dataset',
+      description: 'Updated description',
+      retentionExpiryDate: '2025-12-31',
+      uploadedAt: '2024-01-01T00:00:00Z',
+      fileSize: 1024,
+      rowCount: 100,
+      columnCount: 5,
+      isProcessed: true,
+      isDeleted: false,
+    });
+
     mockUseUpdateDataSet.mockReturnValue({
-      updateDataSet: jest.fn().mockResolvedValue(true),
+      updateDataSet: mockUpdateDataSet,
       loading: false,
     });
 

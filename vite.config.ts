@@ -95,12 +95,6 @@ export default defineConfig(({ mode }) => {
       },
     },
     
-    // Optimize dependencies
-    optimizeDeps: {
-      include: ['react', 'react-dom', 'react-router-dom'],
-      exclude: ['@sentry/react', '@sentry/tracing'],
-    },
-    
     // Performance optimizations
     esbuild: {
       drop: isProduction ? ['console', 'debugger'] : [],

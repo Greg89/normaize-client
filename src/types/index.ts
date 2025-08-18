@@ -116,6 +116,7 @@ export interface DataSet {
   columnCount: number;
   isProcessed: boolean;
   isDeleted?: boolean;
+  retentionExpiryDate?: string; // ISO date string for when the dataset will be automatically deleted
 }
 
 // Analysis Types

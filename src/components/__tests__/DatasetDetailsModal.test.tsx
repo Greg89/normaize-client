@@ -6,6 +6,16 @@ import { DataSet } from '../../types';
 // Mock the formatFileSize utility
 jest.mock('../../utils/format', () => ({
   formatFileSize: (bytes: number) => `${bytes} bytes`,
+  formatDate: (dateString: string | undefined) => {
+    if (!dateString) return 'Not set';
+    // Return a predictable format for testing - map specific dates to expected output
+    if (dateString === '2025-06-30') return '6/30/2025';
+    if (dateString === '2025-12-31') return '12/31/2025';
+    // For any other date, return a predictable format
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return 'Invalid Date';
+    return `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}`;
+  },
 }));
 
 describe('DatasetDetailsModal', () => {
@@ -101,7 +111,8 @@ describe('DatasetDetailsModal', () => {
       />
     );
 
-    expect(screen.getByDisplayValue('')).toBeInTheDocument();
+    const descriptionInput = screen.getByLabelText('Description');
+    expect(descriptionInput).toHaveValue('');
   });
 
   it('displays read-only dataset information correctly', () => {
@@ -202,6 +213,112 @@ describe('DatasetDetailsModal', () => {
         description: 'New Description',
       });
     });
+  });
+
+  it('saves retention expiry date when set', async () => {
+    mockOnSave.mockResolvedValue(true);
+    
+    render(
+      <DatasetDetailsModal
+        dataset={mockDataset}
+        isOpen={true}
+        onClose={mockOnClose}
+        onSave={mockOnSave}
+        loading={false}
+      />
+    );
+
+    const retentionDateInput = screen.getByLabelText('Retention Expiry Date');
+    fireEvent.change(retentionDateInput, { target: { value: '2025-12-31' } });
+    
+    const saveButton = screen.getByText('Save Changes');
+    fireEvent.click(saveButton);
+    
+    await waitFor(() => {
+      expect(mockOnSave).toHaveBeenCalledWith({
+        name: 'Test Dataset',
+        description: 'A test dataset for testing purposes',
+        retentionExpiryDate: '2025-12-31',
+      });
+    });
+  });
+
+  it('saves without retention expiry date when field is empty', async () => {
+    mockOnSave.mockResolvedValue(true);
+    
+    // Create a dataset that already has a retention date
+    const datasetWithRetention = { ...mockDataset, retentionExpiryDate: '2025-06-30' };
+    
+    render(
+      <DatasetDetailsModal
+        dataset={datasetWithRetention}
+        isOpen={true}
+        onClose={mockOnClose}
+        onSave={mockOnSave}
+        loading={false}
+      />
+    );
+
+    const retentionDateInput = screen.getByLabelText('Retention Expiry Date');
+    fireEvent.change(retentionDateInput, { target: { value: '' } });
+    
+    const saveButton = screen.getByText('Save Changes');
+    fireEvent.click(saveButton);
+    
+    await waitFor(() => {
+      expect(mockOnSave).toHaveBeenCalledWith({
+        name: 'Test Dataset',
+        description: 'A test dataset for testing purposes',
+        // retentionExpiryDate should not be included when empty
+      });
+    });
+  });
+
+  it('populates retention expiry date from dataset', () => {
+    const datasetWithRetention = { ...mockDataset, retentionExpiryDate: '2025-06-30' };
+    
+    render(
+      <DatasetDetailsModal
+        dataset={datasetWithRetention}
+        isOpen={true}
+        onClose={mockOnClose}
+        onSave={mockOnSave}
+        loading={false}
+      />
+    );
+
+    const retentionDateInput = screen.getByLabelText('Retention Expiry Date');
+    expect(retentionDateInput).toHaveValue('2025-06-30');
+  });
+
+  it('displays retention expiry date in read-only section', () => {
+    const datasetWithRetention = { ...mockDataset, retentionExpiryDate: '2025-06-30' };
+    
+    render(
+      <DatasetDetailsModal
+        dataset={datasetWithRetention}
+        isOpen={true}
+        onClose={mockOnClose}
+        onSave={mockOnSave}
+        loading={false}
+      />
+    );
+
+    expect(screen.getByText('6/30/2025')).toBeInTheDocument();
+  });
+
+  it('displays "Not set" when retention expiry date is undefined', () => {
+    render(
+      <DatasetDetailsModal
+        dataset={mockDataset}
+        isOpen={true}
+        onClose={mockOnClose}
+        onSave={mockOnSave}
+        loading={false}
+      />
+    );
+
+    expect(screen.getByText('Not set')).toBeInTheDocument();
   });
 
   it('closes modal when save is successful', async () => {

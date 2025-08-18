@@ -6,7 +6,7 @@ interface DatasetDetailsModalProps {
   dataset: DataSet | null;
   isOpen: boolean;
   onClose: () => void;
-  onSave: (updates: { name: string; description: string }) => Promise<boolean>;
+  onSave: (updates: { name: string; description: string; retentionExpiryDate?: string }) => Promise<boolean>;
   loading: boolean;
 }
 
@@ -19,18 +19,37 @@ export default function DatasetDetailsModal({
 }: DatasetDetailsModalProps) {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
+  const [tempRetentionDate, setTempRetentionDate] = useState('');
 
   useEffect(() => {
     if (dataset) {
       setName(dataset.name);
       setDescription(dataset.description || '');
+      
+      // Convert ISO date string to YYYY-MM-DD format for the date input
+      if (dataset.retentionExpiryDate) {
+        const date = new Date(dataset.retentionExpiryDate);
+        const formattedDate = date.toISOString().split('T')[0];
+        setTempRetentionDate(formattedDate || '');
+      } else {
+        setTempRetentionDate('');
+      }
     }
   }, [dataset]);
 
   const handleSave = async () => {
     if (!dataset) return;
     
-    const success = await onSave({ name, description });
+    const updates: { name: string; description: string; retentionExpiryDate?: string } = {
+      name,
+      description,
+    };
+    
+    if (tempRetentionDate.trim() !== '') {
+      updates.retentionExpiryDate = tempRetentionDate;
+    }
+    
+    const success = await onSave(updates);
     if (success) {
       onClose();
     }
@@ -41,15 +60,25 @@ export default function DatasetDetailsModal({
     if (dataset) {
       setName(dataset.name);
       setDescription(dataset.description || '');
+      
+      // Convert ISO date string to YYYY-MM-DD format for the date input
+      if (dataset.retentionExpiryDate) {
+        const date = new Date(dataset.retentionExpiryDate);
+        const formattedDate = date.toISOString().split('T')[0];
+        setTempRetentionDate(formattedDate || '');
+      } else {
+        setTempRetentionDate('');
+      }
     }
     onClose();
   };
+
 
   if (!isOpen || !dataset) return null;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+      <div className="bg-white rounded-lg p-6 w-full max-w-4xl mx-4 max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-semibold text-gray-900">Dataset Details</h2>
           <button
@@ -93,10 +122,10 @@ export default function DatasetDetailsModal({
             />
           </div>
 
-          {/* Read-only Fields */}
+          {/* Read-only Fields in Two Columns */}
           <div className="border-t pt-4">
-            <h3 className="text-sm font-medium text-gray-700 mb-2">Additional Information</h3>
-            <div className="space-y-2 text-sm text-gray-600">
+            <h3 className="text-sm font-medium text-gray-700 mb-4">Additional Information</h3>
+            <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm text-gray-600">
               <div className="flex justify-between">
                 <span>File Name:</span>
                 <span className="font-mono truncate max-w-xs ml-2" title={dataset.fileName}>{dataset.fileName}</span>
@@ -126,6 +155,21 @@ export default function DatasetDetailsModal({
                 <span className={dataset.isProcessed ? 'text-green-600' : 'text-yellow-600'}>
                   {dataset.isProcessed ? 'Processed' : 'Pending'}
                 </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span>Retention Expiry:</span>
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="date"
+                    value={tempRetentionDate}
+                    onChange={(e) => setTempRetentionDate(e.target.value)}
+                    min={new Date().toISOString().split('T')[0]}
+                    className="px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white cursor-pointer hover:border-blue-400"
+                    title="Click to set retention expiry date"
+                    disabled={loading}
+                  />
+                  <span className="text-xs text-gray-500">(click to edit)</span>
+                </div>
               </div>
             </div>
           </div>

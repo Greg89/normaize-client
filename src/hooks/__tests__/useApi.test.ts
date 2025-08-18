@@ -287,7 +287,8 @@ describe('useApi', () => {
 
   describe('useUpdateDataSet hook', () => {
     it('should update dataset successfully', async () => {
-      (apiService.updateDataSet as jest.Mock).mockResolvedValue({ id: 1, name: 'Updated' });
+      const mockUpdatedDataset = { id: 1, name: 'Updated' };
+      (apiService.updateDataSet as jest.Mock).mockResolvedValue(mockUpdatedDataset);
       
       const { result } = renderHook(() => useUpdateDataSet());
       
@@ -298,7 +299,7 @@ describe('useApi', () => {
         return await result.current.updateDataSet(1, { name: 'Updated' });
       });
       
-      expect(updateResult).toBe(true);
+      expect(updateResult).toEqual(mockUpdatedDataset);
       expect(apiService.updateDataSet).toHaveBeenCalledWith(1, { name: 'Updated' });
     });
 
@@ -312,7 +313,7 @@ describe('useApi', () => {
         return await result.current.updateDataSet(1, { name: 'Updated' });
       });
       
-      expect(updateResult).toBe(false);
+      expect(updateResult).toBe(null);
       expect(result.current.error).toBe('Update failed');
       expect(result.current.loading).toBe(false);
     });
@@ -326,7 +327,7 @@ describe('useApi', () => {
         return await result.current.updateDataSet(1, { name: 'Updated' });
       });
       
-      expect(updateResult).toBe(false);
+      expect(updateResult).toBe(null);
       expect(result.current.error).toBe('Failed to update dataset');
     });
   });

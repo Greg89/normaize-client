@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { ErrorHandler } from '../utils/errorHandling';
 import { apiService } from '../services/api';
+import { DataSet } from '../types';
 
 interface PreviewRow {
   [key: string]: string | number | boolean | null;
@@ -108,19 +109,20 @@ export function useUpdateDataSet() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const updateDataSet = useCallback(async (id: number, updates: { name?: string; description?: string }): Promise<boolean> => {
+  const updateDataSet = useCallback(async (id: number, updates: { name?: string; description?: string; retentionExpiryDate?: string }): Promise<DataSet | null> => {
     setLoading(true);
     setError(null);
     
     try {
-      await apiService.updateDataSet(id, updates);
+      const updatedDataset = await apiService.updateDataSet(id, updates);
+      
       setLoading(false);
-      return true;
+      return updatedDataset;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to update dataset';
       setError(errorMessage);
       setLoading(false);
-      return false;
+      return null;
     }
   }, []);
 

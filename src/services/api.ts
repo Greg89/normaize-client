@@ -321,11 +321,12 @@ class ApiService {
     await this.request(`/api/datasets/${id}`, { method: 'DELETE' });
   }
 
-  async updateDataSet(id: number, updates: { name?: string; description?: string }): Promise<DataSet> {
+  async updateDataSet(id: number, updates: { name?: string; description?: string; retentionExpiryDate?: string }): Promise<DataSet> { 
     const response = await this.request<DataSet>(`/api/datasets/${id}`, {
       method: 'PUT',
       body: JSON.stringify(updates),
     });
+    
     return response.data;
   }
 

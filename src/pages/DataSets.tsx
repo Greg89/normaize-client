@@ -93,14 +93,21 @@ export default function DataSets() {
     setOpenDropdown(null); // Close dropdown
   };
 
-  const handleUpdateDataset = async (updates: { name: string; description: string }): Promise<boolean> => {
+  const handleUpdateDataset = async (updates: { name: string; description: string; retentionExpiryDate?: string }): Promise<boolean> => {
     if (!selectedDataset) return false;
 
     try {
-      const success = await updateDataSet(selectedDataset.id, updates);
-      if (success) {
+      const updatedDataset = await updateDataSet(selectedDataset.id, updates);
+      
+      if (updatedDataset) {
         toast.success(`Dataset "${updates.name}" updated successfully`);
-        refetch(); // Refresh the datasets list
+        
+        // Update both selectedDataset and the dataset in the datasets array
+        setSelectedDataset(updatedDataset);
+        
+        // Refresh the datasets list to show updated data
+        await refetch();
+        
         return true;
       } else {
         toast.error('Failed to update dataset');
