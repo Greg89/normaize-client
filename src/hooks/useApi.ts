@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { ErrorHandler } from '../utils/errorHandling';
 import { apiService } from '../services/api';
-import { DataSet } from '../types';
+import { DataSet, DataSetResetDto } from '../types';
 
 interface PreviewRow {
   [key: string]: string | number | boolean | null;
@@ -128,6 +128,34 @@ export function useUpdateDataSet() {
 
   return {
     updateDataSet,
+    loading,
+    error,
+  };
+}
+
+export function useResetDataSet() {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const resetDataSet = useCallback(async (id: number, resetDto: DataSetResetDto): Promise<DataSet | null> => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const resetDataset = await apiService.resetDataSet(id, resetDto);
+      
+      setLoading(false);
+      return resetDataset;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to reset dataset';
+      setError(errorMessage);
+      setLoading(false);
+      return null;
+    }
+  }, []);
+
+  return {
+    resetDataSet,
     loading,
     error,
   };

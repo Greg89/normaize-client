@@ -1,7 +1,8 @@
 import { renderHook, act, waitFor } from '@testing-library/react';
-import { useApi, useDataSets, useAnalyses, useAnalysis, useDeleteDataSet, useUpdateDataSet, useDatasetPreview } from '../useApi';
+import { useApi, useDataSets, useAnalyses, useAnalysis, useDeleteDataSet, useUpdateDataSet, useResetDataSet, useDatasetPreview } from '../useApi';
 import { apiService } from '../../services/api';
 import { ErrorHandler } from '../../utils/errorHandling';
+import { ResetType } from '../../types';
 
 // Mock the API service
 jest.mock('../../services/api', () => ({
@@ -11,6 +12,7 @@ jest.mock('../../services/api', () => ({
     getAnalysis: jest.fn(),
     deleteDataSet: jest.fn(),
     updateDataSet: jest.fn(),
+    resetDataSet: jest.fn(),
     getDataSetPreview: jest.fn(),
   },
 }));
@@ -287,20 +289,17 @@ describe('useApi', () => {
 
   describe('useUpdateDataSet hook', () => {
     it('should update dataset successfully', async () => {
-      const mockUpdatedDataset = { id: 1, name: 'Updated' };
-      (apiService.updateDataSet as jest.Mock).mockResolvedValue(mockUpdatedDataset);
+      const mockDataset = { id: 1, name: 'Updated Dataset' };
+      (apiService.updateDataSet as jest.Mock).mockResolvedValue(mockDataset);
       
       const { result } = renderHook(() => useUpdateDataSet());
       
+      const updateResult = await result.current.updateDataSet(1, { name: 'Updated Dataset' });
+      
+      expect(updateResult).toEqual(mockDataset);
       expect(result.current.loading).toBe(false);
       expect(result.current.error).toBe(null);
-      
-      const updateResult = await act(async () => {
-        return await result.current.updateDataSet(1, { name: 'Updated' });
-      });
-      
-      expect(updateResult).toEqual(mockUpdatedDataset);
-      expect(apiService.updateDataSet).toHaveBeenCalledWith(1, { name: 'Updated' });
+      expect(apiService.updateDataSet).toHaveBeenCalledWith(1, { name: 'Updated Dataset' });
     });
 
     it('should handle update errors', async () => {
@@ -309,13 +308,11 @@ describe('useApi', () => {
       
       const { result } = renderHook(() => useUpdateDataSet());
       
-      const updateResult = await act(async () => {
-        return await result.current.updateDataSet(1, { name: 'Updated' });
-      });
+      const updateResult = await result.current.updateDataSet(1, { name: 'Updated Dataset' });
       
       expect(updateResult).toBe(null);
-      expect(result.current.error).toBe('Update failed');
       expect(result.current.loading).toBe(false);
+      expect(result.current.error).toBe('Update failed');
     });
 
     it('should handle non-Error objects in update', async () => {
@@ -323,12 +320,52 @@ describe('useApi', () => {
       
       const { result } = renderHook(() => useUpdateDataSet());
       
-      const updateResult = await act(async () => {
-        return await result.current.updateDataSet(1, { name: 'Updated' });
-      });
+      const updateResult = await result.current.updateDataSet(1, { name: 'Updated Dataset' });
       
       expect(updateResult).toBe(null);
+      expect(result.current.loading).toBe(false);
       expect(result.current.error).toBe('Failed to update dataset');
+    });
+  });
+
+  describe('useResetDataSet hook', () => {
+    it('should reset dataset successfully', async () => {
+      const mockDataset = { id: 1, name: 'Reset Dataset' };
+      (apiService.resetDataSet as jest.Mock).mockResolvedValue(mockDataset);
+      
+      const { result } = renderHook(() => useResetDataSet());
+      
+      const resetResult = await result.current.resetDataSet(1, { resetType: ResetType.REPROCESS, reason: 'Test reset' });
+      
+      expect(resetResult).toEqual(mockDataset);
+      expect(result.current.loading).toBe(false);
+      expect(result.current.error).toBe(null);
+      expect(apiService.resetDataSet).toHaveBeenCalledWith(1, { resetType: ResetType.REPROCESS, reason: 'Test reset' });
+    });
+
+    it('should handle reset errors', async () => {
+      const mockError = new Error('Reset failed');
+      (apiService.resetDataSet as jest.Mock).mockRejectedValue(mockError);
+      
+      const { result } = renderHook(() => useResetDataSet());
+      
+      const resetResult = await result.current.resetDataSet(1, { resetType: ResetType.REPROCESS, reason: 'Test reset' });
+      
+      expect(resetResult).toBe(null);
+      expect(result.current.loading).toBe(false);
+      expect(result.current.error).toBe('Reset failed');
+    });
+
+    it('should handle non-Error objects in reset', async () => {
+      (apiService.resetDataSet as jest.Mock).mockRejectedValue('String error');
+      
+      const { result } = renderHook(() => useResetDataSet());
+      
+      const resetResult = await result.current.resetDataSet(1, { resetType: ResetType.REPROCESS, reason: 'Test reset' });
+      
+      expect(resetResult).toBe(null);
+      expect(result.current.loading).toBe(false);
+      expect(result.current.error).toBe('Failed to reset dataset');
     });
   });
 

@@ -4,8 +4,8 @@ import { toast } from 'react-hot-toast';
 import FileUpload from '../components/FileUpload';
 import DatasetDetailsModal from '../components/DatasetDetailsModal';
 import DatasetPreviewModal from '../components/DatasetPreviewModal';
-import { useDataSets, useDeleteDataSet, useUpdateDataSet } from '../hooks/useApi';
-import { DataSet } from '../types';
+import { useDataSets, useDeleteDataSet, useUpdateDataSet, useResetDataSet } from '../hooks/useApi';
+import { DataSet, ResetType } from '../types';
 import { logger } from '../utils/logger';
 import { formatFileSize } from '../utils/format';
 
@@ -14,6 +14,7 @@ export default function DataSets() {
   const { data: datasets, loading, error, refetch } = useDataSets(includeDeleted);
   const { deleteDataSet, loading: deleteLoading } = useDeleteDataSet();
   const { updateDataSet, loading: updateLoading } = useUpdateDataSet();
+  const { resetDataSet, loading: resetLoading } = useResetDataSet();
   const [showUpload, setShowUpload] = useState(false);
   const [searchParams] = useSearchParams();
   const [openDropdown, setOpenDropdown] = useState<number | null>(null);
@@ -117,6 +118,60 @@ export default function DataSets() {
       logger.error('Update dataset error', { error, datasetId: selectedDataset.id });
       toast.error('An error occurred while updating the dataset');
       return false;
+    }
+  };
+
+  const handleRestoreDataset = async (dataset: DataSet) => {
+    const confirmed = window.confirm(
+      `Are you sure you want to restore "${dataset.name}"? This will make the dataset active again.`
+    );
+    
+    if (!confirmed) return;
+
+    setOpenDropdown(null); // Close dropdown
+
+    try {
+      const restoredDataset = await resetDataSet(dataset.id, {
+        resetType: ResetType.RESTORE,
+        reason: 'Dataset restored by user'
+      });
+      
+      if (restoredDataset) {
+        toast.success(`Dataset "${dataset.name}" restored successfully`);
+        refetch(); // Refresh the datasets list
+      } else {
+        toast.error('Failed to restore dataset');
+      }
+    } catch (error) {
+      logger.error('Restore dataset error', { error, datasetId: dataset.id });
+      toast.error('An error occurred while restoring the dataset');
+    }
+  };
+
+  const handleResetDataset = async (dataset: DataSet) => {
+    const confirmed = window.confirm(
+      `Are you sure you want to reset "${dataset.name}"? This will restore the dataset to its original uploaded state.`
+    );
+    
+    if (!confirmed) return;
+
+    setOpenDropdown(null); // Close dropdown
+
+    try {
+      const resetDataset = await resetDataSet(dataset.id, {
+        resetType: ResetType.REPROCESS,
+        reason: 'Dataset reset to original state by user'
+      });
+      
+      if (resetDataset) {
+        toast.success(`Dataset "${dataset.name}" reset successfully`);
+        refetch(); // Refresh the datasets list
+      } else {
+        toast.error('Failed to reset dataset');
+      }
+    } catch (error) {
+      logger.error('Reset dataset error', { error, datasetId: dataset.id });
+      toast.error('An error occurred while resetting the dataset');
     }
   };
 
@@ -246,7 +301,7 @@ export default function DataSets() {
                         <button 
                           onClick={() => toggleDropdown(dataset.id)}
                           className="text-gray-400 hover:text-gray-600 p-1 rounded"
-                          disabled={deleteLoading}
+                          disabled={deleteLoading || resetLoading}
                         >
                           <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
@@ -268,6 +323,22 @@ export default function DataSets() {
                                 className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900"
                               >
                                 Preview Data
+                              </button>
+                              {dataset.isDeleted && (
+                                <button
+                                  onClick={() => handleRestoreDataset(dataset)}
+                                  className="block w-full text-left px-4 py-2 text-sm text-green-600 hover:bg-green-50 hover:text-green-700"
+                                  disabled={resetLoading}
+                                >
+                                  {resetLoading ? 'Restoring...' : 'Restore Dataset'}
+                                </button>
+                              )}
+                              <button
+                                onClick={() => handleResetDataset(dataset)}
+                                className="block w-full text-left px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 hover:text-blue-700"
+                                disabled={resetLoading}
+                              >
+                                {resetLoading ? 'Resetting...' : 'Reset Dataset'}
                               </button>
                               <button
                                 onClick={() => handleDeleteDataset(dataset)}

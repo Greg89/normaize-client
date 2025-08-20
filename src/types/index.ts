@@ -153,3 +153,14 @@ export interface ApiError {
   status?: number;
   code?: string;
 } 
+
+// Dataset Reset Types
+export enum ResetType {
+  RESTORE = 'RESTORE',
+  REPROCESS = 'REPROCESS'
+}
+
+export interface DataSetResetDto {
+  resetType: ResetType;
+  reason?: string;
+} 

@@ -13,6 +13,11 @@ jest.mock('../../hooks/useApi', () => ({
   useDataSets: () => mockUseDataSets(),
   useDeleteDataSet: () => mockUseDeleteDataSet(),
   useUpdateDataSet: () => mockUseUpdateDataSet(),
+  useResetDataSet: () => ({
+    resetDataSet: jest.fn(),
+    loading: false,
+    error: null,
+  }),
 }));
 
 jest.mock('react-router-dom', () => ({

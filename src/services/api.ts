@@ -1,4 +1,4 @@
-import { ApiResponse, PaginatedResponse, DataSet, Analysis, DataSetUploadResponse, UserProfileDto, UserSettingsDto } from '../types';
+import { ApiResponse, PaginatedResponse, DataSet, Analysis, DataSetUploadResponse, UserProfileDto, UserSettingsDto, DataSetResetDto } from '../types';
 import { API_CONFIG } from '../utils/constants';
 import { logger } from '../utils/logger';
 
@@ -319,6 +319,15 @@ class ApiService {
 
   async deleteDataSet(id: number): Promise<void> {
     await this.request(`/api/datasets/${id}`, { method: 'DELETE' });
+  }
+
+  async resetDataSet(id: number, resetDto: DataSetResetDto): Promise<DataSet> {
+    const response = await this.request<DataSet>(`/api/datasets/${id}/reset`, {
+      method: 'POST',
+      body: JSON.stringify(resetDto),
+    });
+    
+    return response.data;
   }
 
   async updateDataSet(id: number, updates: { name?: string; description?: string; retentionExpiryDate?: string }): Promise<DataSet> { 
