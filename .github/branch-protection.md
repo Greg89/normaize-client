@@ -4,7 +4,32 @@ To prevent bad deployments, set up branch protection rules in your GitHub reposi
 
 ## 🔒 Required Branch Protection Rules
 
-### For `main` branch:
+### For `develop` branch (Primary Development Branch):
+
+1. **Go to Settings > Branches**
+2. **Add rule for `develop` branch**
+3. **Configure the following settings:**
+
+#### ✅ Require status checks to pass before merging
+- **Status checks that are required:**
+  - `lint-and-type-check`
+  - `build-and-test`
+  - `security-audit`
+  - `performance-check`
+
+#### ✅ Require branches to be up to date before merging
+- Ensures PRs are based on the latest develop branch
+
+#### ✅ Require pull request reviews before merging
+- **Required approving reviews:** 1
+- **Dismiss stale PR approvals when new commits are pushed:** ✅
+- **Require review from code owners:** ✅ (if you have CODEOWNERS)
+
+#### ✅ Include administrators
+- **Include administrators:** ✅
+- Ensures even repo admins follow the rules
+
+### For `main` branch (Production Branch):
 
 1. **Go to Settings > Branches**
 2. **Add rule for `main` branch**
@@ -35,13 +60,6 @@ To prevent bad deployments, set up branch protection rules in your GitHub reposi
 #### ✅ Include administrators
 - **Include administrators:** ✅
 - Ensures even repo admins follow the rules
-
-### For `develop` branch (if using):
-
-Apply similar rules but with fewer restrictions:
-- Require status checks
-- Require PR reviews (1 approval)
-- Require branches to be up to date
 
 ## 🚫 What This Prevents
 

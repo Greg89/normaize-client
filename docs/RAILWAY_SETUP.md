@@ -44,15 +44,17 @@ This guide explains how to set up separate beta and production environments on R
 
 ### 2. Configure Branch Deployments
 
-#### Beta Project:
-- **Branch**: `develop`
+#### Beta Project (Primary Development Environment):
+- **Branch**: `develop` (Default repository branch)
 - **Auto-deploy**: ✅ Enabled
 - **Health check**: `/`
+- **Purpose**: Continuous deployment of latest features for testing
 
-#### Production Project:
-- **Branch**: `main`
+#### Production Project (Stable Release Environment):
+- **Branch**: `main` (Stable release branch)
 - **Auto-deploy**: ✅ Enabled
 - **Health check**: `/`
+- **Purpose**: Stable releases after thorough testing in beta
 
 ## 🔐 GitHub Secrets Setup
 
@@ -81,12 +83,14 @@ RAILWAY_PRODUCTION_SERVICE_NAME=normaize-production
 ## 🌿 Branch Strategy
 
 ### Workflow:
-1. **Feature Development**:
+1. **Feature Development** (Start from default branch):
    ```bash
+   git checkout develop  # Default branch for new development
+   git pull origin develop
    git checkout -b feature/new-feature
    # Make changes
    git push origin feature/new-feature
-   # Create PR to develop
+   # Create PR to develop (default target)
    ```
 
 2. **Beta Testing**:
@@ -100,7 +104,7 @@ RAILWAY_PRODUCTION_SERVICE_NAME=normaize-production
 
 3. **Production Release**:
    ```bash
-   # Merge to main
+   # Merge to main (after beta testing)
    git checkout main
    git merge develop
    git push origin main
@@ -109,13 +113,13 @@ RAILWAY_PRODUCTION_SERVICE_NAME=normaize-production
 
 ## 🔒 Branch Protection Rules
 
-### For `develop` branch:
+### For `develop` branch (Primary Development Branch):
 - ✅ Require status checks to pass
 - ✅ Require branches to be up to date
 - ✅ Require pull request reviews (1 approval)
 - ✅ Include administrators
 
-### For `main` branch:
+### For `main` branch (Production Release Branch):
 - ✅ Require status checks to pass
 - ✅ Require branches to be up to date
 - ✅ Require pull request reviews (1 approval)

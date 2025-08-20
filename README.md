@@ -6,7 +6,7 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-4.9-blue)](https://www.typescriptlang.org/)
 [![React](https://img.shields.io/badge/React-18.2-blue)](https://reactjs.org/)
 [![Vite](https://img.shields.io/badge/Vite-7.0-purple)](https://vitejs.dev/)
-[![License](https://img.shields.io/badge/license-MIT-green)](https://github.com/Greg89/normaize-client/blob/main/LICENSE)
+[![License](https://img.shields.io/badge/license-MIT-green)](https://github.com/Greg89/normaize-client/blob/develop/LICENSE)
 
 A production-ready React application built with Vite, TypeScript, and Tailwind CSS for data analysis and visualization. Features comprehensive error handling, logging, and monitoring capabilities.
 
@@ -48,8 +48,10 @@ A production-ready React application built with Vite, TypeScript, and Tailwind C
 
 1. **Clone and install dependencies:**
    ```bash
-   git clone <your-repo-url>
+   git clone https://github.com/Greg89/normaize-client.git
    cd normaize-client
+   # Note: Repository now defaults to 'develop' branch for active development
+   git status  # Should show 'develop' branch
    npm install
    ```
 
@@ -338,13 +340,50 @@ Integrated monitoring and analytics:
 
 ## 🤝 Contributing
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Run tests: `npm run test`
-5. Run type checking: `npm run type-check`
-6. Run linting: `npm run lint`
-7. Submit a pull request
+### Branch Workflow
+
+This repository uses `develop` as the default branch for active development:
+
+- **`develop`** - Default branch for new features and development (deploys to beta)
+- **`main`** - Stable production branch (deploys to production)
+
+### Contribution Steps
+
+1. **Fork and clone the repository:**
+   ```bash
+   git clone https://github.com/your-username/normaize-client.git
+   cd normaize-client
+   # Repository defaults to 'develop' branch
+   ```
+
+2. **Create a feature branch from develop:**
+   ```bash
+   git checkout develop
+   git pull origin develop
+   git checkout -b feature/your-feature-name
+   ```
+
+3. **Make your changes and test:**
+   ```bash
+   npm run type-check  # TypeScript type checking
+   npm run lint        # ESLint checking
+   npm run test        # Run tests
+   npm run build       # Verify build works
+   ```
+
+4. **Submit a pull request:**
+   - Target the `develop` branch (not `main`)
+   - Include a clear description of your changes
+   - Ensure all CI checks pass
+
+### Deployment Flow
+```
+Feature Branch → develop (Beta) → main (Production)
+```
+
+- All PRs should target `develop` first
+- After testing in beta, changes are promoted to `main`
+- Direct PRs to `main` are only for hotfixes
 
 ## 📄 License
 
