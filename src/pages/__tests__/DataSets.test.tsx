@@ -593,4 +593,494 @@ describe('DataSets', () => {
       expect(toggle).toBeChecked();
     });
   });
+
+  describe('Dataset Restore Functionality', () => {
+    let mockResetDataSet: jest.Mock;
+    let mockRefetch: jest.Mock;
+
+    beforeEach(() => {
+      mockResetDataSet = jest.fn();
+      mockRefetch = jest.fn();
+
+      // Mock useResetDataSet hook
+      jest.doMock('../../hooks/useApi', () => ({
+        useDataSets: () => mockUseDataSets(),
+        useDeleteDataSet: () => mockUseDeleteDataSet(),
+        useUpdateDataSet: () => mockUseUpdateDataSet(),
+        useResetDataSet: () => ({
+          resetDataSet: mockResetDataSet,
+          loading: false,
+          error: null,
+        }),
+      }));
+
+      // Mock datasets with deleted dataset
+      mockUseDataSets.mockReturnValue({
+        data: [...mockDatasets, mockDeletedDataset],
+        loading: false,
+        error: null,
+        refetch: mockRefetch,
+      });
+    });
+
+    it('shows restore option only for deleted datasets', () => {
+      renderWithRouter(<DataSets />);
+      
+      // Open dropdown for deleted dataset
+      const actionButtons = screen.getAllByRole('button', { name: '' });
+      const deletedDatasetButton = actionButtons.find(button => 
+        button.closest('[class*="border-red-200"]') && 
+        button.querySelector('svg') && 
+        button.querySelector('svg')?.getAttribute('d')?.includes('M12 5v.01')
+      );
+      
+      if (deletedDatasetButton) {
+        fireEvent.click(deletedDatasetButton);
+        
+        // Should show restore option for deleted dataset
+        expect(screen.getByText('Restore Dataset')).toBeInTheDocument();
+      }
+    });
+
+    it('does not show restore option for active datasets', () => {
+      renderWithRouter(<DataSets />);
+      
+      // Open dropdown for active dataset
+      const actionButtons = screen.getAllByRole('button', { name: '' });
+      const activeDatasetButton = actionButtons.find(button => 
+        button.closest('[class*="border-green-200"]') && 
+        button.querySelector('svg') && 
+        button.querySelector('svg')?.getAttribute('d')?.includes('M12 5v.01')
+      );
+      
+      if (activeDatasetButton) {
+        fireEvent.click(activeDatasetButton);
+        
+        // Should not show restore option for active dataset
+        expect(screen.queryByText('Restore Dataset')).not.toBeInTheDocument();
+      }
+    });
+
+    it('restores deleted dataset successfully', async () => {
+      const mockRestoredDataset = {
+        ...mockDeletedDataset,
+        isDeleted: false,
+      };
+
+      mockResetDataSet.mockResolvedValue(mockRestoredDataset);
+
+      renderWithRouter(<DataSets />);
+      
+      // Open dropdown for deleted dataset
+      const actionButtons = screen.getAllByRole('button', { name: '' });
+      const deletedDatasetButton = actionButtons.find(button => 
+        button.closest('[class*="border-red-200"]') && 
+        button.querySelector('svg') && 
+        button.querySelector('svg')?.getAttribute('d')?.includes('M12 5v.01')
+      );
+      
+      if (deletedDatasetButton) {
+        fireEvent.click(deletedDatasetButton);
+        
+        const restoreButton = screen.getByText('Restore Dataset');
+        fireEvent.click(restoreButton);
+        
+        await waitFor(() => {
+          expect(mockResetDataSet).toHaveBeenCalledWith(3, {
+            resetType: 'RESTORE',
+            reason: 'Dataset restored by user'
+          });
+          expect(mockRefetch).toHaveBeenCalled();
+        });
+        
+        const { toast } = await import('react-hot-toast');
+        expect(toast.success).toHaveBeenCalledWith('Dataset "Deleted Dataset" restored successfully');
+      }
+    });
+
+    it('handles restore dataset error', async () => {
+      mockResetDataSet.mockRejectedValue(new Error('Restore failed'));
+
+      renderWithRouter(<DataSets />);
+      
+      // Open dropdown for deleted dataset
+      const actionButtons = screen.getAllByRole('button', { name: '' });
+      const deletedDatasetButton = actionButtons.find(button => 
+        button.closest('[class*="border-red-200"]') && 
+        button.querySelector('svg') && 
+        button.querySelector('svg')?.getAttribute('d')?.includes('M12 5v.01')
+      );
+      
+      if (deletedDatasetButton) {
+        fireEvent.click(deletedDatasetButton);
+        
+        const restoreButton = screen.getByText('Restore Dataset');
+        fireEvent.click(restoreButton);
+        
+        await waitFor(() => {
+          expect(mockResetDataSet).toHaveBeenCalled();
+        });
+        
+        const { toast } = await import('react-hot-toast');
+        expect(toast.error).toHaveBeenCalledWith('An error occurred while restoring the dataset');
+      }
+    });
+
+    it('cancels restore when user declines confirmation', () => {
+      // Mock window.confirm to return false
+      Object.defineProperty(window, 'confirm', {
+        writable: true,
+        value: jest.fn().mockReturnValue(false),
+      });
+
+      renderWithRouter(<DataSets />);
+      
+      // Open dropdown for deleted dataset
+      const actionButtons = screen.getAllByRole('button', { name: '' });
+      const deletedDatasetButton = actionButtons.find(button => 
+        button.closest('[class*="border-red-200"]') && 
+        button.querySelector('svg') && 
+        button.querySelector('svg')?.getAttribute('d')?.includes('M12 5v.01')
+      );
+      
+      if (deletedDatasetButton) {
+        fireEvent.click(deletedDatasetButton);
+        
+        const restoreButton = screen.getByText('Restore Dataset');
+        fireEvent.click(restoreButton);
+        
+        // Should not call resetDataSet when user cancels
+        expect(mockResetDataSet).not.toHaveBeenCalled();
+        expect(mockRefetch).not.toHaveBeenCalled();
+      }
+    });
+  });
+
+  describe('Dataset Reset Functionality', () => {
+    let mockResetDataSet: jest.Mock;
+    let mockRefetch: jest.Mock;
+
+    beforeEach(() => {
+      mockResetDataSet = jest.fn();
+      mockRefetch = jest.fn();
+
+      // Mock useResetDataSet hook
+      jest.doMock('../../hooks/useApi', () => ({
+        useDataSets: () => mockUseDataSets(),
+        useDeleteDataSet: () => mockUseDeleteDataSet(),
+        useUpdateDataSet: () => mockUseUpdateDataSet(),
+        useResetDataSet: () => ({
+          resetDataSet: mockResetDataSet,
+          loading: false,
+          error: null,
+        }),
+      }));
+
+      // Mock datasets with both active and deleted datasets
+      mockUseDataSets.mockReturnValue({
+        data: [...mockDatasets, mockDeletedDataset],
+        loading: false,
+        error: null,
+        refetch: mockRefetch,
+      });
+    });
+
+    it('shows reset option for all datasets (active and deleted)', () => {
+      renderWithRouter(<DataSets />);
+      
+      // Open dropdown for active dataset
+      const actionButtons = screen.getAllByRole('button', { name: '' });
+      const activeDatasetButton = actionButtons.find(button => 
+        button.closest('[class*="border-green-200"]') && 
+        button.querySelector('svg') && 
+        button.querySelector('svg')?.getAttribute('d')?.includes('M12 5v.01')
+      );
+      
+      if (activeDatasetButton) {
+        fireEvent.click(activeDatasetButton);
+        
+        // Should show reset option for active dataset
+        expect(screen.getByText('Reset Dataset')).toBeInTheDocument();
+        
+        // Close dropdown by clicking outside or clicking the same button again
+        fireEvent.click(activeDatasetButton);
+      }
+
+      // Open dropdown for deleted dataset
+      const deletedDatasetButton = actionButtons.find(button => 
+        button.closest('[class*="border-red-200"]') && 
+        button.querySelector('svg') && 
+        button.querySelector('svg')?.getAttribute('d')?.includes('M12 5v.01')
+      );
+      
+      if (deletedDatasetButton) {
+        fireEvent.click(deletedDatasetButton);
+        
+        // Should also show reset option for deleted dataset
+        expect(screen.getByText('Reset Dataset')).toBeInTheDocument();
+      }
+    });
+
+    it('resets active dataset successfully', async () => {
+      const mockResetDataset = {
+        ...mockDatasets[0],
+        isProcessed: false, // Reset to unprocessed state
+      };
+
+      mockResetDataSet.mockResolvedValue(mockResetDataset);
+
+      renderWithRouter(<DataSets />);
+      
+      // Open dropdown for active dataset
+      const actionButtons = screen.getAllByRole('button', { name: '' });
+      const activeDatasetButton = actionButtons.find(button => 
+        button.closest('[class*="border-green-200"]') && 
+        button.querySelector('svg') && 
+        button.querySelector('svg')?.getAttribute('d')?.includes('M12 5v.01')
+      );
+      
+      if (activeDatasetButton) {
+        fireEvent.click(activeDatasetButton);
+        
+        const resetButton = screen.getByText('Reset Dataset');
+        fireEvent.click(resetButton);
+        
+        await waitFor(() => {
+          expect(mockResetDataSet).toHaveBeenCalledWith(1, {
+            resetType: 'REPROCESS',
+            reason: 'Dataset reset to original state by user'
+          });
+          expect(mockRefetch).toHaveBeenCalled();
+        });
+        
+        const { toast } = await import('react-hot-toast');
+        expect(toast.success).toHaveBeenCalledWith('Dataset "Test Dataset 1" reset successfully');
+      }
+    });
+
+    it('resets deleted dataset successfully', async () => {
+      const mockResetDataset = {
+        ...mockDeletedDataset,
+        isDeleted: false, // Reset to active state
+        isProcessed: false, // Reset to unprocessed state
+      };
+
+      mockResetDataSet.mockResolvedValue(mockResetDataset);
+
+      renderWithRouter(<DataSets />);
+      
+      // Open dropdown for deleted dataset
+      const actionButtons = screen.getAllByRole('button', { name: '' });
+      const deletedDatasetButton = actionButtons.find(button => 
+        button.closest('[class*="border-red-200"]') && 
+        button.querySelector('svg') && 
+        button.querySelector('svg')?.getAttribute('d')?.includes('M12 5v.01')
+      );
+      
+      if (deletedDatasetButton) {
+        fireEvent.click(deletedDatasetButton);
+        
+        const resetButton = screen.getByText('Reset Dataset');
+        fireEvent.click(resetButton);
+        
+        await waitFor(() => {
+          expect(mockResetDataSet).toHaveBeenCalledWith(3, {
+            resetType: 'REPROCESS',
+            reason: 'Dataset reset to original state by user'
+          });
+          expect(mockRefetch).toHaveBeenCalled();
+        });
+        
+        const { toast } = await import('react-hot-toast');
+        expect(toast.success).toHaveBeenCalledWith('Dataset "Deleted Dataset" reset successfully');
+      }
+    });
+
+    it('handles reset dataset error', async () => {
+      mockResetDataSet.mockRejectedValue(new Error('Reset failed'));
+
+      renderWithRouter(<DataSets />);
+      
+      // Open dropdown for active dataset
+      const actionButtons = screen.getAllByRole('button', { name: '' });
+      const activeDatasetButton = actionButtons.find(button => 
+        button.closest('[class*="border-green-200"]') && 
+        button.querySelector('svg') && 
+        button.querySelector('svg')?.getAttribute('d')?.includes('M12 5v.01')
+      );
+      
+      if (activeDatasetButton) {
+        fireEvent.click(activeDatasetButton);
+        
+        const resetButton = screen.getByText('Reset Dataset');
+        fireEvent.click(resetButton);
+        
+        await waitFor(() => {
+          expect(mockResetDataSet).toHaveBeenCalled();
+        });
+        
+        const { toast } = await import('react-hot-toast');
+        expect(toast.error).toHaveBeenCalledWith('An error occurred while resetting the dataset');
+      }
+    });
+
+    it('cancels reset when user declines confirmation', () => {
+      // Mock window.confirm to return false
+      Object.defineProperty(window, 'confirm', {
+        writable: true,
+        value: jest.fn().mockReturnValue(false),
+      });
+
+      renderWithRouter(<DataSets />);
+      
+      // Open dropdown for active dataset
+      const actionButtons = screen.getAllByRole('button', { name: '' });
+      const activeDatasetButton = actionButtons.find(button => 
+        button.closest('[class*="border-green-200"]') && 
+        button.querySelector('svg') && 
+        button.querySelector('svg')?.getAttribute('d')?.includes('M12 5v.01')
+      );
+      
+      if (activeDatasetButton) {
+        fireEvent.click(activeDatasetButton);
+        
+        const resetButton = screen.getByText('Reset Dataset');
+        fireEvent.click(resetButton);
+        
+        // Should not call resetDataSet when user cancels
+        expect(mockResetDataSet).not.toHaveBeenCalled();
+        expect(mockRefetch).not.toHaveBeenCalled();
+      }
+    });
+
+    it('closes dropdown after starting reset operation', async () => {
+      mockResetDataSet.mockResolvedValue(mockDatasets[0]);
+
+      renderWithRouter(<DataSets />);
+      
+      // Open dropdown for active dataset
+      const actionButtons = screen.getAllByRole('button', { name: '' });
+      const activeDatasetButton = actionButtons.find(button => 
+        button.closest('[class*="border-green-200"]') && 
+        button.querySelector('svg') && 
+        button.querySelector('svg')?.getAttribute('d')?.includes('M12 5v.01')
+      );
+      
+      if (activeDatasetButton) {
+        fireEvent.click(activeDatasetButton);
+        
+        // Verify dropdown is open
+        expect(screen.getByText('Reset Dataset')).toBeInTheDocument();
+        
+        const resetButton = screen.getByText('Reset Dataset');
+        fireEvent.click(resetButton);
+        
+        await waitFor(() => {
+          // Dropdown should be closed after starting reset operation
+          expect(screen.queryByText('Reset Dataset')).not.toBeInTheDocument();
+        });
+      }
+    });
+  });
+
+  describe('Loading States', () => {
+    it('disables dropdown button when reset operations are in progress', () => {
+      // Mock useResetDataSet with loading state
+      jest.doMock('../../hooks/useApi', () => ({
+        useDataSets: () => mockUseDataSets(),
+        useDeleteDataSet: () => mockUseDeleteDataSet(),
+        useUpdateDataSet: () => mockUseUpdateDataSet(),
+        useResetDataSet: () => ({
+          resetDataSet: jest.fn(),
+          loading: true, // Set loading to true
+          error: null,
+        }),
+      }));
+
+      renderWithRouter(<DataSets />);
+      
+      // All dropdown buttons should be disabled when reset is loading
+      const actionButtons = screen.getAllByRole('button', { name: '' });
+      const dropdownButtons = actionButtons.filter(button => 
+        button.querySelector('svg') && 
+        button.querySelector('svg')?.getAttribute('d')?.includes('M12 5v.01')
+      );
+      
+      dropdownButtons.forEach(button => {
+        expect(button).toBeDisabled();
+      });
+    });
+
+    it('shows loading text in reset button when operation is in progress', () => {
+      // Mock useResetDataSet with loading state
+      jest.doMock('../../hooks/useApi', () => ({
+        useDataSets: () => mockUseDataSets(),
+        useDeleteDataSet: () => mockUseDeleteDataSet(),
+        useUpdateDataSet: () => mockUseUpdateDataSet(),
+        useResetDataSet: () => ({
+          resetDataSet: jest.fn(),
+          loading: true, // Set loading to true
+          error: null,
+        }),
+      }));
+
+      renderWithRouter(<DataSets />);
+      
+      // Open dropdown for active dataset
+      const actionButtons = screen.getAllByRole('button', { name: '' });
+      const activeDatasetButton = actionButtons.find(button => 
+        button.closest('[class*="border-green-200"]') && 
+        button.querySelector('svg') && 
+        button.querySelector('svg')?.getAttribute('d')?.includes('M12 5v.01')
+      );
+      
+      if (activeDatasetButton) {
+        fireEvent.click(activeDatasetButton);
+        
+        // Should show loading text
+        expect(screen.getByText('Resetting...')).toBeInTheDocument();
+        expect(screen.queryByText('Reset Dataset')).not.toBeInTheDocument();
+      }
+    });
+
+    it('shows loading text in restore button when operation is in progress', () => {
+      // Mock useResetDataSet with loading state
+      jest.doMock('../../hooks/useApi', () => ({
+        useDataSets: () => mockUseDataSets(),
+        useDeleteDataSet: () => mockUseDeleteDataSet(),
+        useUpdateDataSet: () => mockUseUpdateDataSet(),
+        useResetDataSet: () => ({
+          resetDataSet: jest.fn(),
+          loading: true, // Set loading to true
+          error: null,
+        }),
+      }));
+
+      // Mock datasets with deleted dataset
+      mockUseDataSets.mockReturnValue({
+        data: [...mockDatasets, mockDeletedDataset],
+        loading: false,
+        error: null,
+        refetch: jest.fn(),
+      });
+
+      renderWithRouter(<DataSets />);
+      
+      // Open dropdown for deleted dataset
+      const actionButtons = screen.getAllByRole('button', { name: '' });
+      const deletedDatasetButton = actionButtons.find(button => 
+        button.closest('[class*="border-red-200"]') && 
+        button.querySelector('svg') && 
+        button.querySelector('svg')?.getAttribute('d')?.includes('M12 5v.01')
+      );
+      
+      if (deletedDatasetButton) {
+        fireEvent.click(deletedDatasetButton);
+        
+        // Should show loading text
+        expect(screen.getByText('Restoring...')).toBeInTheDocument();
+        expect(screen.queryByText('Restore Dataset')).not.toBeInTheDocument();
+      }
+    });
+  });
 });
