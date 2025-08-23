@@ -3,7 +3,6 @@ import { toast } from 'react-hot-toast';
 import { DataSet } from '../../types';
 import { logger } from '../../utils/logger';
 import { 
-  EyeIcon,
   PlayIcon
 } from '@heroicons/react/24/outline';
 
@@ -116,37 +115,7 @@ export default function RemoveDuplicates({ dataset }: RemoveDuplicatesProps) {
             </div>
           </div>
 
-          {/* Actions */}
-          <div className="space-y-3">
-            <button
-              onClick={() => {
-                // Mock preview functionality
-                toast('Preview functionality coming soon!', { icon: '👀' });
-              }}
-              className="w-full flex items-center justify-center px-4 py-3 border border-blue-300 text-blue-700 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
-            >
-              <EyeIcon className="h-5 w-5 mr-2" />
-              Preview Changes
-            </button>
-            
-            <button
-              onClick={() => {
-                // Mock execution functionality
-                const columnText = config.columns.length > 0 
-                  ? `based on columns: ${config.columns.join(', ')}` 
-                  : 'based on all columns';
-                toast(`Duplicate removal executed ${columnText}`, { icon: '✅' });
-                logger.info('Duplicate removal executed', { 
-                  datasetId: dataset.id, 
-                  config 
-                });
-              }}
-              className="w-full flex items-center justify-center px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              <PlayIcon className="h-5 w-5 mr-2" />
-              Execute Duplicate Removal
-            </button>
-          </div>
+
         </div>
 
         {/* Preview Panel */}
@@ -184,12 +153,24 @@ export default function RemoveDuplicates({ dataset }: RemoveDuplicatesProps) {
             </div>
           </div>
 
-          <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-            <h4 className="font-medium text-blue-900 mb-2">Estimated Impact</h4>
-            <p className="text-blue-700 text-sm">
-              This action will scan all {dataset.rowCount.toLocaleString()} rows and remove any duplicates found.
-              A backup of your original data will be maintained.
-            </p>
+          <div className="mt-6">
+            <button
+              onClick={() => {
+                // Mock execution functionality
+                const columnText = config.columns.length > 0 
+                  ? `based on columns: ${config.columns.join(', ')}` 
+                  : 'based on all columns';
+                toast(`Duplicate removal executed ${columnText}`, { icon: '✅' });
+                logger.info('Duplicate removal executed', { 
+                  datasetId: dataset.id, 
+                  config 
+                });
+              }}
+              className="w-full flex items-center justify-center px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              <PlayIcon className="h-5 w-5 mr-2" />
+              Execute Duplicate Removal
+            </button>
           </div>
         </div>
       </div>

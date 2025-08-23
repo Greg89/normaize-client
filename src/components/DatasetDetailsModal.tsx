@@ -2,6 +2,21 @@ import { useState, useEffect } from 'react';
 import { DataSet } from '../types';
 import { formatFileSize } from '../utils/format';
 
+// Format date function that matches test expectations
+const formatDate = (dateString: string | undefined): string => {
+  if (!dateString) return 'Not set';
+  
+  // Handle YYYY-MM-DD format to avoid timezone issues
+  if (dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
+    const [year, month, day] = dateString.split('-').map(Number);
+    return `${month}/${day}/${year}`;
+  }
+  
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) return 'Invalid Date';
+  return `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}`;
+};
+
 interface DatasetDetailsModalProps {
   dataset: DataSet | null;
   isOpen: boolean;
@@ -159,8 +174,12 @@ export default function DatasetDetailsModal({
               <div className="flex justify-between items-center">
                 <span>Retention Expiry:</span>
                 <div className="flex items-center space-x-2">
+                  <span>{formatDate(dataset.retentionExpiryDate)}</span>
+                  <label htmlFor="retention-date" className="sr-only">Retention Expiry Date</label>
                   <input
                     type="date"
+                    id="retention-date"
+                    aria-label="Retention Expiry Date"
                     value={tempRetentionDate}
                     onChange={(e) => setTempRetentionDate(e.target.value)}
                     min={new Date().toISOString().split('T')[0]}

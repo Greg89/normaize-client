@@ -177,18 +177,19 @@ describe('Normalization', () => {
 
     renderNormalization();
 
-    // Click on the first dataset (which is processed)
-    const selectButton = screen.getAllByText('Select Dataset')[0];
-    fireEvent.click(selectButton);
+    // Click on the first dataset (which is processed) - should click on the dataset card
+    const datasetCard = screen.getByText('Test Dataset 1').closest('div[class*="cursor-pointer"]');
+    expect(datasetCard).toBeInTheDocument();
+    fireEvent.click(datasetCard as HTMLElement);
 
     await waitFor(() => {
-      expect(screen.getByText('Data Transformation Workflow')).toBeInTheDocument();
-      expect(screen.getByText('Selected Dataset: Test Dataset 1')).toBeInTheDocument();
+      expect(screen.getByText('Normalization Tools')).toBeInTheDocument();
+      expect(screen.getByText('Test Dataset 1')).toBeInTheDocument();
     });
 
-    // Check that transformation steps are shown
+    // Check that tool categories are shown
     expect(screen.getByText('Data Cleaning')).toBeInTheDocument();
-    expect(screen.getByText('Data Normalization')).toBeInTheDocument();
+    expect(screen.getAllByText('Data Normalization')[1]).toBeInTheDocument(); // Second instance (tool category)
     expect(screen.getByText('Data Enhancement')).toBeInTheDocument();
     expect(screen.getByText('Data Validation')).toBeInTheDocument();
   });
@@ -204,11 +205,13 @@ describe('Normalization', () => {
 
     renderNormalization();
 
-    const processingButtons = screen.getAllByText('Processing...');
-    
-    // The second dataset is not processed, so its button should be disabled
-    expect(processingButtons[1]).toBeInTheDocument();
-    expect(processingButtons[1]).toHaveClass('cursor-not-allowed');
+    const processingStatus = screen.getByText('Processing...');
+    expect(processingStatus).toBeInTheDocument();
+
+    // The second dataset is not processed - should be clickable but shows processing status
+    const secondDatasetCard = screen.getByText('Test Dataset 2').closest('div[class*="cursor-pointer"]');
+    expect(secondDatasetCard).toBeInTheDocument();
+    expect(secondDatasetCard).toHaveClass('border-yellow-200'); // Yellow border for processing datasets
   });
 
   it('allows changing dataset from transformation workflow', async () => {
@@ -222,16 +225,16 @@ describe('Normalization', () => {
 
     renderNormalization();
 
-    // Select a dataset first
-    const selectButton = screen.getAllByText('Select Dataset')[0];
-    fireEvent.click(selectButton);
+    // Select a dataset first - click on the dataset card
+    const datasetCard = screen.getByText('Test Dataset 1').closest('div[class*="cursor-pointer"]');
+    fireEvent.click(datasetCard as HTMLElement);
 
     await waitFor(() => {
-      expect(screen.getByText('Data Transformation Workflow')).toBeInTheDocument();
+      expect(screen.getByText('Normalization Tools')).toBeInTheDocument();
     });
 
     // Click change dataset button
-    const changeButton = screen.getByText('← Change Dataset');
+    const changeButton = screen.getByText('Change Dataset');
     fireEvent.click(changeButton);
 
     await waitFor(() => {

@@ -1,6 +1,10 @@
 import '@testing-library/jest-dom';
 import 'jest-environment-jsdom';
 
+// Mock the modules that use import.meta.env
+jest.mock('./utils/constants');
+jest.mock('./utils/logger');
+
 // Mock window.matchMedia
 Object.defineProperty(window, 'matchMedia', {
   writable: true,

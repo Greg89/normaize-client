@@ -1,23 +1,23 @@
 // Mock import.meta.env for Jest - this must be done before any modules are loaded
-if (typeof global !== 'undefined') {
-  Object.defineProperty(global, 'import', {
-    value: {
-      meta: {
-        env: {
-          VITE_API_URL: 'http://localhost:5000',
-          VITE_SEQ_URL: 'http://localhost:5341',
-          VITE_SEQ_API_KEY: 'test-api-key',
-          VITE_NODE_ENV: 'test',
-          VITE_SENTRY_DSN: 'test-sentry-dsn',
-          VITE_AUTH0_DOMAIN: 'test.auth0.com',
-          VITE_AUTH0_CLIENT_ID: 'test-client-id',
-          VITE_AUTH0_AUDIENCE: 'test-audience',
-        },
-      },
+// Set up global import.meta for ESM compatibility
+(global as any).import = {
+  meta: {
+    env: {
+      VITE_API_URL: 'http://localhost:5000',
+      VITE_SEQ_URL: 'http://localhost:5341',
+      VITE_SEQ_API_KEY: 'test-api-key',
+      VITE_NODE_ENV: 'test',
+      VITE_SENTRY_DSN: 'test-sentry-dsn',
+      VITE_AUTH0_DOMAIN: 'test.auth0.com',
+      VITE_AUTH0_CLIENT_ID: 'test-client-id',
+      VITE_AUTH0_AUDIENCE: 'test-audience',
     },
-    writable: true,
-    configurable: true,
-  });
+  },
+};
+
+// Also define it on globalThis for broader compatibility
+if (typeof globalThis !== 'undefined') {
+  (globalThis as any).import = (global as any).import;
 }
 
 // Mock window.matchMedia

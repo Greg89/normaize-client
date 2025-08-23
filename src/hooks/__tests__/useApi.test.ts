@@ -311,8 +311,10 @@ describe('useApi', () => {
       const updateResult = await result.current.updateDataSet(1, { name: 'Updated Dataset' });
       
       expect(updateResult).toBe(null);
-      expect(result.current.loading).toBe(false);
-      expect(result.current.error).toBe('Update failed');
+      await waitFor(() => {
+        expect(result.current.loading).toBe(false);
+        expect(result.current.error).toBe('Update failed');
+      });
     });
 
     it('should handle non-Error objects in update', async () => {
@@ -323,8 +325,10 @@ describe('useApi', () => {
       const updateResult = await result.current.updateDataSet(1, { name: 'Updated Dataset' });
       
       expect(updateResult).toBe(null);
-      expect(result.current.loading).toBe(false);
-      expect(result.current.error).toBe('Failed to update dataset');
+      await waitFor(() => {
+        expect(result.current.loading).toBe(false);
+        expect(result.current.error).toBe('Failed to update dataset');
+      });
     });
   });
 
@@ -352,8 +356,10 @@ describe('useApi', () => {
       const resetResult = await result.current.resetDataSet(1, { resetType: ResetType.REPROCESS, reason: 'Test reset' });
       
       expect(resetResult).toBe(null);
-      expect(result.current.loading).toBe(false);
-      expect(result.current.error).toBe('Reset failed');
+      await waitFor(() => {
+        expect(result.current.loading).toBe(false);
+        expect(result.current.error).toBe('Reset failed');
+      });
     });
 
     it('should handle non-Error objects in reset', async () => {
@@ -364,8 +370,10 @@ describe('useApi', () => {
       const resetResult = await result.current.resetDataSet(1, { resetType: ResetType.REPROCESS, reason: 'Test reset' });
       
       expect(resetResult).toBe(null);
-      expect(result.current.loading).toBe(false);
-      expect(result.current.error).toBe('Failed to reset dataset');
+      await waitFor(() => {
+        expect(result.current.loading).toBe(false);
+        expect(result.current.error).toBe('Failed to reset dataset');
+      });
     });
   });
 

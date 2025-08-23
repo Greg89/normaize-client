@@ -4,8 +4,15 @@ import { Toaster } from 'react-hot-toast';
 import RemoveDuplicates from '../RemoveDuplicates';
 import { DataSet } from '../../../types';
 
-// Mock the logger
+// Mock the problematic modules
 jest.mock('../../../utils/logger');
+jest.mock('../../../utils/constants', () => ({
+  API_CONFIG: {
+    BASE_URL: 'http://localhost:5000',
+    TIMEOUT: 10000
+  }
+}));
+jest.mock('../../../services/api');
 
 const mockDataset: DataSet = {
   id: 1,
@@ -36,7 +43,7 @@ describe('RemoveDuplicates', () => {
 
     expect(screen.getByText('Remove Duplicates')).toBeInTheDocument();
     expect(screen.getByText(/Configure duplicate removal settings for/)).toBeInTheDocument();
-    expect(screen.getByText('Test Dataset')).toBeInTheDocument();
+    expect(screen.getAllByText('Test Dataset')).toHaveLength(2); // Once in header, once in summary
   });
 
   it('shows column selection options', () => {
@@ -74,11 +81,12 @@ describe('RemoveDuplicates', () => {
     expect(screen.getByText('All columns')).toBeInTheDocument();
   });
 
-  it('has preview and execute buttons', () => {
+  it('has execute button', () => {
     renderRemoveDuplicates();
 
-    expect(screen.getByText('Preview Changes')).toBeInTheDocument();
     expect(screen.getByText('Execute Duplicate Removal')).toBeInTheDocument();
+    // Preview button was removed per requirements
+    expect(screen.queryByText('Preview Changes')).not.toBeInTheDocument();
   });
 
   it('updates configuration summary when columns are selected', () => {
@@ -88,7 +96,8 @@ describe('RemoveDuplicates', () => {
     const emailCheckbox = screen.getByLabelText('email');
     fireEvent.click(emailCheckbox);
 
-    // Check that summary updates
-    expect(screen.getByText('email')).toBeInTheDocument();
+    // Check that summary updates - should find email in the summary section
+    const summarySection = screen.getByText('Configuration Summary').closest('div');
+    expect(summarySection).toHaveTextContent('email');
   });
 });
