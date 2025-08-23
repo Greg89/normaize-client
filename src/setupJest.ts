@@ -1,6 +1,16 @@
 // Mock import.meta.env for Jest - this must be done before any modules are loaded
 // Set up global import.meta for ESM compatibility
-(global as any).import = {
+interface ImportMeta {
+  env: Record<string, string>;
+}
+
+interface GlobalWithImport extends NodeJS.Global {
+  import: {
+    meta: ImportMeta;
+  };
+}
+
+(global as GlobalWithImport).import = {
   meta: {
     env: {
       VITE_API_URL: 'http://localhost:5000',
@@ -17,7 +27,7 @@
 
 // Also define it on globalThis for broader compatibility
 if (typeof globalThis !== 'undefined') {
-  (globalThis as any).import = (global as any).import;
+  (globalThis as GlobalWithImport).import = (global as GlobalWithImport).import;
 }
 
 // Mock window.matchMedia
