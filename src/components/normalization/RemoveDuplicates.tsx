@@ -17,6 +17,33 @@ export default function RemoveDuplicates({ dataset }: RemoveDuplicatesProps) {
     caseSensitive: true
   });
 
+  // Extract columns from dataset schema or previewData
+  const getAvailableColumns = (): string[] => {
+    try {
+      // First try to get from schema field
+      if (dataset.schema) {
+        const schemaColumns = JSON.parse(dataset.schema);
+        if (Array.isArray(schemaColumns)) {
+          return schemaColumns;
+        }
+      }
+      
+      // Fallback to previewData columns
+      if (dataset.previewData) {
+        const previewData = JSON.parse(dataset.previewData);
+        if (previewData.columns && Array.isArray(previewData.columns)) {
+          return previewData.columns;
+        }
+      }
+    } catch (error) {
+      logger.error('Failed to parse dataset schema/preview data', { error, datasetId: dataset.id });
+    }
+    
+    return [];
+  };
+
+  const availableColumns = getAvailableColumns();
+
   return (
     <div className="space-y-6">
       <div className="mb-8">
@@ -40,8 +67,12 @@ export default function RemoveDuplicates({ dataset }: RemoveDuplicatesProps) {
                   Choose which columns to use when identifying duplicates. Leave empty to compare all columns.
                 </div>
                 <div className="space-y-2 max-h-40 overflow-y-auto border border-gray-200 rounded-md p-3">
-                  {/* Mock column list - in real implementation, this would come from dataset schema */}
-                  {['id', 'name', 'email', 'age', 'city', 'country'].map((column) => (
+                  {availableColumns.length === 0 ? (
+                    <div className="text-center py-4">
+                      <p className="text-sm text-gray-500">No columns detected in dataset</p>
+                    </div>
+                  ) : (
+                    availableColumns.map((column) => (
                     <label key={column} className="flex items-center space-x-2">
                       <input
                         type="checkbox"
@@ -63,7 +94,8 @@ export default function RemoveDuplicates({ dataset }: RemoveDuplicatesProps) {
                       />
                       <span className="text-sm text-gray-700">{column}</span>
                     </label>
-                  ))}
+                    ))
+                  )}
                 </div>
               </div>
 

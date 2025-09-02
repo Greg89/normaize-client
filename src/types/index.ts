@@ -117,6 +117,8 @@ export interface DataSet {
   isProcessed: boolean;
   isDeleted?: boolean;
   retentionExpiryDate?: string; // ISO date string for when the dataset will be automatically deleted
+  schema?: string; // JSON string containing column names array
+  previewData?: string; // JSON string containing preview data with columns array
 }
 
 // Analysis Types
