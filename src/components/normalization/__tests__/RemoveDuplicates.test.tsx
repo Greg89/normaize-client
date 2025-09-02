@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { Toaster } from 'react-hot-toast';
 import RemoveDuplicates from '../RemoveDuplicates';
 import { DataSet } from '../../../types';
@@ -14,6 +14,16 @@ jest.mock('../../../utils/constants', () => ({
 }));
 jest.mock('../../../services/api');
 
+// Mock the useRemoveDuplicates hook
+const mockRemoveDuplicates = jest.fn();
+jest.mock('../../../hooks/useApi', () => ({
+  useRemoveDuplicates: () => ({
+    removeDuplicates: mockRemoveDuplicates,
+    loading: false,
+    error: null,
+  }),
+}));
+
 const mockDataset: DataSet = {
   id: 1,
   name: 'Test Dataset',
@@ -25,7 +35,8 @@ const mockDataset: DataSet = {
   rowCount: 1000,
   columnCount: 6,
   isProcessed: true,
-  isDeleted: false
+  isDeleted: false,
+  schema: JSON.stringify(['id', 'name', 'email', 'age', 'city', 'country'])
 };
 
 const renderRemoveDuplicates = () => {
@@ -55,13 +66,26 @@ describe('RemoveDuplicates', () => {
     expect(screen.getByText('email')).toBeInTheDocument();
   });
 
-  it('allows selecting columns', () => {
+  it('has all columns selected by default', () => {
     renderRemoveDuplicates();
 
     const nameCheckbox = screen.getByLabelText('name');
-    fireEvent.click(nameCheckbox);
+    const emailCheckbox = screen.getByLabelText('email');
+    const idCheckbox = screen.getByLabelText('id');
 
     expect(nameCheckbox).toBeChecked();
+    expect(emailCheckbox).toBeChecked();
+    expect(idCheckbox).toBeChecked();
+  });
+
+  it('allows deselecting columns', () => {
+    renderRemoveDuplicates();
+
+    const nameCheckbox = screen.getByLabelText('name');
+    expect(nameCheckbox).toBeChecked(); // Initially checked
+
+    fireEvent.click(nameCheckbox);
+    expect(nameCheckbox).not.toBeChecked(); // Now unchecked
   });
 
   it('shows keep strategy options', () => {
@@ -72,7 +96,7 @@ describe('RemoveDuplicates', () => {
     expect(screen.getByText('Keep last occurrence')).toBeInTheDocument();
   });
 
-  it('shows configuration summary', () => {
+  it('shows configuration summary with all columns selected by default', () => {
     renderRemoveDuplicates();
 
     expect(screen.getByText('Configuration Summary')).toBeInTheDocument();
@@ -89,15 +113,92 @@ describe('RemoveDuplicates', () => {
     expect(screen.queryByText('Preview Changes')).not.toBeInTheDocument();
   });
 
-  it('updates configuration summary when columns are selected', () => {
+  it('updates configuration summary when columns are deselected', () => {
     renderRemoveDuplicates();
 
-    // Select email column
+    // Initially shows "All columns"
+    expect(screen.getByText('All columns')).toBeInTheDocument();
+
+    // Deselect email column
     const emailCheckbox = screen.getByLabelText('email');
     fireEvent.click(emailCheckbox);
 
-    // Check that summary updates - should find email in the summary section
+    // Check that summary updates to show specific columns (not "All columns")
     const summarySection = screen.getByText('Configuration Summary').closest('div');
-    expect(summarySection).toHaveTextContent('email');
+    expect(summarySection).toHaveTextContent('id, name, age, city, country');
+    expect(summarySection).not.toHaveTextContent('All columns');
+  });
+
+  it('has Select All and Deselect All buttons', () => {
+    renderRemoveDuplicates();
+
+    expect(screen.getByText('Select All')).toBeInTheDocument();
+    expect(screen.getByText('Deselect All')).toBeInTheDocument();
+  });
+
+  it('Select All button selects all columns', () => {
+    renderRemoveDuplicates();
+
+    // First deselect a column
+    const emailCheckbox = screen.getByLabelText('email');
+    fireEvent.click(emailCheckbox);
+    expect(emailCheckbox).not.toBeChecked();
+
+    // Click Select All
+    const selectAllButton = screen.getByText('Select All');
+    fireEvent.click(selectAllButton);
+
+    // All columns should be selected
+    expect(emailCheckbox).toBeChecked();
+    expect(screen.getByText('All columns')).toBeInTheDocument();
+  });
+
+  it('Deselect All button deselects all columns', () => {
+    renderRemoveDuplicates();
+
+    // Initially all columns are selected
+    const emailCheckbox = screen.getByLabelText('email');
+    expect(emailCheckbox).toBeChecked();
+
+    // Click Deselect All
+    const deselectAllButton = screen.getByText('Deselect All');
+    fireEvent.click(deselectAllButton);
+
+    // No columns should be selected
+    expect(emailCheckbox).not.toBeChecked();
+    expect(screen.getByText('No columns selected')).toBeInTheDocument();
+  });
+
+  it('shows validation error when no columns are selected and execute is clicked', async () => {
+    renderRemoveDuplicates();
+
+    // Deselect all columns first
+    const deselectAllButton = screen.getByText('Deselect All');
+    fireEvent.click(deselectAllButton);
+
+    const executeButton = screen.getByText('Execute Duplicate Removal');
+    fireEvent.click(executeButton);
+
+    await waitFor(() => {
+      // The toast error should be triggered
+      expect(mockRemoveDuplicates).not.toHaveBeenCalled();
+    });
+  });
+
+  it('calls API with all columns selected by default when execute is clicked', async () => {
+    mockRemoveDuplicates.mockResolvedValue(true);
+    renderRemoveDuplicates();
+
+    // All columns are selected by default, so we can execute immediately
+    const executeButton = screen.getByText('Execute Duplicate Removal');
+    fireEvent.click(executeButton);
+
+    await waitFor(() => {
+      expect(mockRemoveDuplicates).toHaveBeenCalledWith(1, {
+        columnNames: ['id', 'name', 'email', 'age', 'city', 'country'],
+        keepFirstOccurrence: true,
+        caseSensitive: true,
+      });
+    });
   });
 });

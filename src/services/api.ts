@@ -1,4 +1,4 @@
-import { ApiResponse, PaginatedResponse, DataSet, Analysis, DataSetUploadResponse, UserProfileDto, UserSettingsDto, DataSetResetDto } from '../types';
+import { ApiResponse, PaginatedResponse, DataSet, Analysis, DataSetUploadResponse, UserProfileDto, UserSettingsDto, DataSetResetDto, RemoveDuplicateRowsRequest } from '../types';
 import { API_CONFIG } from '../utils/constants';
 import { logger } from '../utils/logger';
 
@@ -345,6 +345,13 @@ class ApiService {
   async getDataSetPreview(id: number): Promise<PreviewRow[]> {
     const response = await this.request<PreviewRow[]>(`/api/datasets/${id}/preview`);
     return response.data;
+  }
+
+  async removeDuplicates(dataSetId: number, request: RemoveDuplicateRowsRequest): Promise<void> {
+    await this.request(`/api/datasets/${dataSetId}/remove-duplicates`, {
+      method: 'POST',
+      body: JSON.stringify(request),
+    });
   }
 
   // Analysis endpoints

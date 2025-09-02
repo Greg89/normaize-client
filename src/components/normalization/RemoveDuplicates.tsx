@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { toast } from 'react-hot-toast';
 import { DataSet } from '../../types';
 import { logger } from '../../utils/logger';
+import { useRemoveDuplicates } from '../../hooks/useApi';
 import { 
   PlayIcon
 } from '@heroicons/react/24/outline';
@@ -11,12 +12,8 @@ interface RemoveDuplicatesProps {
 }
 
 export default function RemoveDuplicates({ dataset }: RemoveDuplicatesProps) {
-  const [config, setConfig] = useState({
-    columns: [] as string[],
-    keepFirst: true,
-    caseSensitive: true
-  });
-
+  const { removeDuplicates, loading: apiLoading, error: apiError } = useRemoveDuplicates();
+  
   // Extract columns from dataset schema or previewData
   const getAvailableColumns = (): string[] => {
     try {
@@ -43,6 +40,12 @@ export default function RemoveDuplicates({ dataset }: RemoveDuplicatesProps) {
   };
 
   const availableColumns = getAvailableColumns();
+  
+  const [config, setConfig] = useState({
+    columns: availableColumns, // Default all columns selected
+    keepFirst: true,
+    caseSensitive: true
+  });
 
   return (
     <div className="space-y-6">
@@ -64,8 +67,26 @@ export default function RemoveDuplicates({ dataset }: RemoveDuplicatesProps) {
                   Select Columns for Comparison
                 </label>
                 <div className="text-sm text-gray-500 mb-3">
-                  Choose which columns to use when identifying duplicates. Leave empty to compare all columns.
+                  Choose which columns to use when identifying duplicates. All columns are selected by default.
                 </div>
+                {availableColumns.length > 0 && (
+                  <div className="flex gap-2 mb-3">
+                    <button
+                      type="button"
+                      onClick={() => setConfig(prev => ({ ...prev, columns: availableColumns }))}
+                      className="text-xs px-2 py-1 bg-blue-50 text-blue-600 rounded hover:bg-blue-100 transition-colors"
+                    >
+                      Select All
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setConfig(prev => ({ ...prev, columns: [] }))}
+                      className="text-xs px-2 py-1 bg-gray-50 text-gray-600 rounded hover:bg-gray-100 transition-colors"
+                    >
+                      Deselect All
+                    </button>
+                  </div>
+                )}
                 <div className="space-y-2 max-h-40 overflow-y-auto border border-gray-200 rounded-md p-3">
                   {availableColumns.length === 0 ? (
                     <div className="text-center py-4">
@@ -164,8 +185,10 @@ export default function RemoveDuplicates({ dataset }: RemoveDuplicatesProps) {
               <span className="font-medium text-gray-700">Columns to compare:</span>
               <div className="ml-2 text-gray-600">
                 {config.columns.length > 0 
-                  ? config.columns.join(', ')
-                  : 'All columns'
+                  ? (config.columns.length === availableColumns.length 
+                      ? 'All columns' 
+                      : config.columns.join(', '))
+                  : 'No columns selected'
                 }
               </div>
             </div>
@@ -186,22 +209,48 @@ export default function RemoveDuplicates({ dataset }: RemoveDuplicatesProps) {
           </div>
 
           <div className="mt-6">
+            {apiError && (
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
+                <p className="text-sm text-red-600">{apiError}</p>
+              </div>
+            )}
             <button
-              onClick={() => {
-                // Mock execution functionality
-                const columnText = config.columns.length > 0 
-                  ? `based on columns: ${config.columns.join(', ')}` 
-                  : 'based on all columns';
-                toast(`Duplicate removal executed ${columnText}`, { icon: '✅' });
-                logger.info('Duplicate removal executed', { 
-                  datasetId: dataset.id, 
-                  config 
-                });
+              onClick={async () => {
+                // Validate that at least one column is selected
+                if (config.columns.length === 0) {
+                  toast.error('Please select at least one column for comparison');
+                  return;
+                }
+
+                try {
+                  const success = await removeDuplicates(dataset.id, {
+                    columnNames: config.columns,
+                    keepFirstOccurrence: config.keepFirst,
+                    caseSensitive: config.caseSensitive
+                  });
+
+                  if (success) {
+                    const columnText = config.columns.length > 0 
+                      ? `based on columns: ${config.columns.join(', ')}` 
+                      : 'based on all columns';
+                    toast.success(`Duplicate removal completed ${columnText}`);
+                    logger.info('Duplicate removal executed', { 
+                      datasetId: dataset.id, 
+                      config 
+                    });
+                  } else {
+                    toast.error('Failed to remove duplicates');
+                  }
+                } catch (error) {
+                  logger.error('Duplicate removal error', { error, datasetId: dataset.id });
+                  toast.error('An error occurred while removing duplicates');
+                }
               }}
-              className="w-full flex items-center justify-center px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              disabled={apiLoading}
+              className="w-full flex items-center justify-center px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <PlayIcon className="h-5 w-5 mr-2" />
-              Execute Duplicate Removal
+              {apiLoading ? 'Removing Duplicates...' : 'Execute Duplicate Removal'}
             </button>
           </div>
         </div>

@@ -165,4 +165,11 @@ export enum ResetType {
 export interface DataSetResetDto {
   resetType: ResetType;
   reason?: string;
+}
+
+// Remove Duplicates Request DTO
+export interface RemoveDuplicateRowsRequest {
+  columnNames: string[];
+  keepFirstOccurrence: boolean;
+  caseSensitive: boolean;
 } 

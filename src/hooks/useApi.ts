@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { ErrorHandler } from '../utils/errorHandling';
 import { apiService } from '../services/api';
-import { DataSet, DataSetResetDto } from '../types';
+import { DataSet, DataSetResetDto, RemoveDuplicateRowsRequest } from '../types';
 
 interface PreviewRow {
   [key: string]: string | number | boolean | null;
@@ -183,6 +183,33 @@ export function useDatasetPreview() {
 
   return {
     getPreview,
+    loading,
+    error,
+  };
+}
+
+export function useRemoveDuplicates() {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const removeDuplicates = useCallback(async (dataSetId: number, request: RemoveDuplicateRowsRequest): Promise<boolean> => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      await apiService.removeDuplicates(dataSetId, request);
+      setLoading(false);
+      return true;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to remove duplicates';
+      setError(errorMessage);
+      setLoading(false);
+      return false;
+    }
+  }, []);
+
+  return {
+    removeDuplicates,
     loading,
     error,
   };
