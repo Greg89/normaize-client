@@ -172,4 +172,96 @@ export interface RemoveDuplicateRowsRequest {
   columnNames: string[];
   keepFirstOccurrence: boolean;
   caseSensitive: boolean;
-} 
+}
+
+// Normalization Job Status Enum - matches server-side enum
+export enum NormalizationJobStatus {
+  QUEUED = 'Queued',
+  PROCESSING = 'Processing',
+  COMPLETED = 'Completed',
+  FAILED = 'Failed',
+  CANCELLED = 'Cancelled'
+}
+
+// Normalization Job Response DTO
+export interface NormalizationJobResponse {
+  jobId: string;
+  status: NormalizationJobStatus;
+  message: string;
+  submittedAt: string; // ISO date string
+  estimatedCompletionAt?: string; // ISO date string
+  progressPercentage: number;
+  success: boolean;
+}
+
+// Job tracking interface for client-side state management
+export interface JobTracker {
+  jobId: string;
+  type: 'REMOVE_DUPLICATES' | 'NORMALIZE_DATA' | 'TRANSFORM_DATA';
+  datasetId: number;
+  datasetName: string;
+  status: NormalizationJobStatus;
+  message: string;
+  submittedAt: Date;
+  estimatedCompletionAt?: Date | undefined;
+  progressPercentage: number;
+  lastUpdated: Date;
+  config?: Record<string, unknown> | undefined; // Store job configuration for reference
+}
+
+// Job status utility constants
+export const JOB_STATUS_GROUPS = {
+  ACTIVE: [NormalizationJobStatus.QUEUED, NormalizationJobStatus.PROCESSING],
+  COMPLETED: [NormalizationJobStatus.COMPLETED, NormalizationJobStatus.FAILED, NormalizationJobStatus.CANCELLED],
+  SUCCESSFUL: [NormalizationJobStatus.COMPLETED],
+  FAILED: [NormalizationJobStatus.FAILED, NormalizationJobStatus.CANCELLED]
+} as const;
+
+// Job status utility functions
+export const JobStatusUtils = {
+  isActive: (status: NormalizationJobStatus): boolean => 
+    (JOB_STATUS_GROUPS.ACTIVE as readonly NormalizationJobStatus[]).includes(status),
+  
+  isCompleted: (status: NormalizationJobStatus): boolean => 
+    (JOB_STATUS_GROUPS.COMPLETED as readonly NormalizationJobStatus[]).includes(status),
+  
+  isSuccessful: (status: NormalizationJobStatus): boolean => 
+    (JOB_STATUS_GROUPS.SUCCESSFUL as readonly NormalizationJobStatus[]).includes(status),
+  
+  isFailed: (status: NormalizationJobStatus): boolean => 
+    (JOB_STATUS_GROUPS.FAILED as readonly NormalizationJobStatus[]).includes(status),
+  
+  getDisplayName: (status: NormalizationJobStatus): string => {
+    switch (status) {
+      case NormalizationJobStatus.QUEUED:
+        return 'Queued';
+      case NormalizationJobStatus.PROCESSING:
+        return 'Processing';
+      case NormalizationJobStatus.COMPLETED:
+        return 'Completed';
+      case NormalizationJobStatus.FAILED:
+        return 'Failed';
+      case NormalizationJobStatus.CANCELLED:
+        return 'Cancelled';
+      default:
+        return 'Unknown';
+    }
+  },
+  
+  getStatusColor: (status: NormalizationJobStatus): string => {
+    switch (status) {
+      case NormalizationJobStatus.QUEUED:
+        return 'text-yellow-600 bg-yellow-50';
+      case NormalizationJobStatus.PROCESSING:
+        return 'text-blue-600 bg-blue-50';
+      case NormalizationJobStatus.COMPLETED:
+        return 'text-green-600 bg-green-50';
+      case NormalizationJobStatus.FAILED:
+        return 'text-red-600 bg-red-50';
+      case NormalizationJobStatus.CANCELLED:
+        return 'text-gray-600 bg-gray-50';
+      default:
+        return 'text-gray-600 bg-gray-50';
+    }
+  }
+} as const;  

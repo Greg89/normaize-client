@@ -67,6 +67,10 @@ describe('Normalization', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
+    beforeAll(() => {
+      // ...existing code...
+      window.HTMLElement.prototype.scrollIntoView = jest.fn();
+    });
 
   it('renders normalization page title and description', () => {
     mockUseDataSets.mockReturnValue({

@@ -1,4 +1,4 @@
-import { ApiResponse, PaginatedResponse, DataSet, Analysis, DataSetUploadResponse, UserProfileDto, UserSettingsDto, DataSetResetDto, RemoveDuplicateRowsRequest } from '../types';
+import { ApiResponse, PaginatedResponse, DataSet, Analysis, DataSetUploadResponse, UserProfileDto, UserSettingsDto, DataSetResetDto, RemoveDuplicateRowsRequest, NormalizationJobResponse } from '../types';
 import { API_CONFIG } from '../utils/constants';
 import { logger } from '../utils/logger';
 
@@ -347,11 +347,17 @@ class ApiService {
     return response.data;
   }
 
-  async removeDuplicates(dataSetId: number, request: RemoveDuplicateRowsRequest): Promise<void> {
-    await this.request(`/api/datasets/${dataSetId}/remove-duplicates`, {
+  async removeDuplicates(dataSetId: number, request: RemoveDuplicateRowsRequest): Promise<NormalizationJobResponse> {
+    const response = await this.request<NormalizationJobResponse>(`/api/datasets/${dataSetId}/remove-duplicates`, {
       method: 'POST',
       body: JSON.stringify(request),
     });
+    return response.data;
+  }
+
+  async getJobStatus(jobId: string): Promise<NormalizationJobResponse> {
+    const response = await this.request<NormalizationJobResponse>(`/api/jobs/${jobId}/status`);
+    return response.data;
   }
 
   // Analysis endpoints
