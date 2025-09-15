@@ -1,6 +1,6 @@
 import { JobCleanupService } from '../JobCleanupService';
 import { IJobRepository } from '../interfaces';
-import { JobTracker, NormalizationJobStatus, JobStatusUtils } from '../../../types';
+import { JobTracker, NormalizationJobStatus } from '../../../types';
 import { logger } from '../../../utils/logger';
 
 // Mock logger
