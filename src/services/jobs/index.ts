@@ -49,3 +49,5 @@ export function setJobTrackingService(service: JobTrackingService): void {
 export function resetJobTrackingService(): void {
   jobTrackingServiceInstance = null;
 }
+
+

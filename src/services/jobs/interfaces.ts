@@ -52,3 +52,5 @@ export interface IJobTrackerFactory {
   
   updateFromResponse(existing: JobTracker, response: NormalizationJobResponse): JobTracker;
 }
+
+
