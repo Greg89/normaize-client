@@ -1,16 +1,29 @@
-// Mock import.meta.env for Jest - this must be done before any modules are loaded
-// Set up global import.meta for ESM compatibility
-interface ImportMeta {
-  env: Record<string, string>;
+// Extend globalThis with import.meta.env for Jest compatibility
+type ImportMetaEnv = {
+  VITE_API_URL: string;
+  VITE_SEQ_URL: string;
+  VITE_SEQ_API_KEY: string;
+  VITE_NODE_ENV: string;
+  VITE_SENTRY_DSN: string;
+  VITE_AUTH0_DOMAIN: string;
+  VITE_AUTH0_CLIENT_ID: string;
+  VITE_AUTH0_AUDIENCE: string;
+};
+
+type ImportMeta = {
+  env: ImportMetaEnv;
+};
+
+declare global {
+  // Augment globalThis to include the importMeta property
+  // eslint-disable-next-line no-var
+  var importMeta: { meta: ImportMeta };
+  interface GlobalThis {
+    importMeta: { meta: ImportMeta };
+  }
 }
 
-interface GlobalWithImport extends NodeJS.Global {
-  import: {
-    meta: ImportMeta;
-  };
-}
-
-(global as GlobalWithImport).import = {
+globalThis.importMeta = {
   meta: {
     env: {
       VITE_API_URL: 'http://localhost:5000',
@@ -24,11 +37,6 @@ interface GlobalWithImport extends NodeJS.Global {
     },
   },
 };
-
-// Also define it on globalThis for broader compatibility
-if (typeof globalThis !== 'undefined') {
-  (globalThis as GlobalWithImport).import = (global as GlobalWithImport).import;
-}
 
 // Mock window.matchMedia
 Object.defineProperty(window, 'matchMedia', {

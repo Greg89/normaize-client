@@ -1,4 +1,4 @@
-import { JobTracker } from '../../types';
+import { JobTracker, NormalizationJobStatus } from '../../types';
 import { logger } from '../../utils/logger';
 import { IJobStorage } from './interfaces';
 
@@ -39,12 +39,18 @@ export class LocalStorageJobStorage implements IJobStorage {
 
       const jobsData = JSON.parse(stored);
       const jobs = jobsData.map((jobData: Record<string, unknown>): JobTracker => ({
-        ...jobData,
-        submittedAt: new Date(jobData.submittedAt),
-        estimatedCompletionAt: jobData.estimatedCompletionAt 
-          ? new Date(jobData.estimatedCompletionAt) 
+        jobId: jobData['jobId'] as string,
+        type: jobData['type'] as JobTracker['type'],
+        datasetId: Number(jobData['datasetId']),
+        datasetName: jobData['datasetName'] as string,
+        status: jobData['status'] as NormalizationJobStatus,
+        submittedAt: new Date(jobData['submittedAt'] as string),
+        estimatedCompletionAt: jobData['estimatedCompletionAt'] 
+          ? new Date(jobData['estimatedCompletionAt'] as string)
           : undefined,
-        lastUpdated: new Date(jobData.lastUpdated)
+        lastUpdated: new Date(jobData['lastUpdated'] as string),
+        message: jobData['message'] as string,
+        progressPercentage: Number(jobData['progressPercentage'])
       }));
 
       logger.debug('Jobs loaded from localStorage', { count: jobs.length });
