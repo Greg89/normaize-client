@@ -19,10 +19,10 @@ export interface PaginatedResponse<T> extends ApiResponse<T[]> {
 
 // Upload Response Types
 export interface DataSetUploadResponse {
-  id: number;
+  id: string; // Changed from number to string (GUID)
   message: string;
   success: boolean;
-  dataSetId?: number; // For backward compatibility
+  dataSetId?: string; // For backward compatibility - also changed to string
 }
 
 // User Profile Types - matching server DTOs (camelCase for JSON)
@@ -36,7 +36,7 @@ export interface UserProfileDto {
 }
 
 export interface UserSettingsDto {
-  id: number;
+  id: string; // Changed from number to string (GUID)
   userId: string;
   
   // Notification Settings
@@ -105,7 +105,7 @@ export interface UpdateProfileRequest {
 
 // DataSet Types
 export interface DataSet {
-  id: number;
+  id: string; // Changed from number to string (GUID)
   name: string;
   description?: string;
   fileName: string;
@@ -123,14 +123,14 @@ export interface DataSet {
 
 // Analysis Types
 export interface Analysis {
-  id: number;
+  id: string; // Changed from number to string (GUID)
   name: string;
   description?: string;
   type: string;
   status: 'pending' | 'running' | 'completed' | 'failed';
   createdAt: string;
   completedAt?: string;
-  dataSetId: number;
+  dataSetId: string; // Changed from number to string (GUID)
   results?: unknown;
 }
 
@@ -198,7 +198,7 @@ export interface NormalizationJobResponse {
 export interface JobTracker {
   jobId: string;
   type: 'REMOVE_DUPLICATES' | 'NORMALIZE_DATA' | 'TRANSFORM_DATA';
-  datasetId: number;
+  datasetId: string; // Changed from number to string (GUID)
   datasetName: string;
   status: NormalizationJobStatus;
   message: string;

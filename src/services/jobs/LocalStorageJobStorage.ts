@@ -41,7 +41,7 @@ export class LocalStorageJobStorage implements IJobStorage {
       const jobs = jobsData.map((jobData: Record<string, unknown>): JobTracker => ({
         jobId: jobData['jobId'] as string,
         type: jobData['type'] as JobTracker['type'],
-        datasetId: Number(jobData['datasetId']),
+        datasetId: jobData['datasetId'] as string, // Changed to string
         datasetName: jobData['datasetName'] as string,
         status: jobData['status'] as NormalizationJobStatus,
         submittedAt: new Date(jobData['submittedAt'] as string),

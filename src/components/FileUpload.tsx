@@ -4,7 +4,7 @@ import { Upload, X, CheckCircle, AlertCircle, Loader } from 'lucide-react';
 import { apiService } from '../services/api';
 
 interface FileUploadProps {
-  onUploadSuccess: (datasetId: number, fileName: string) => void;
+  onUploadSuccess: (datasetId: string, fileName: string) => void; // Changed to string
   onUploadError: (error: string) => void;
   maxFileSize?: number;
   allowedTypes?: string[];
@@ -16,7 +16,7 @@ interface UploadProgress {
   progress: number;
   status: 'uploading' | 'success' | 'error';
   error?: string;
-  dataSetId?: number;
+  dataSetId?: string; // Changed to string
 }
 
 const FileUpload: React.FC<FileUploadProps> = ({

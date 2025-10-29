@@ -9,7 +9,7 @@ export class JobTrackerFactory implements IJobTrackerFactory {
   createFromResponse(
     response: NormalizationJobResponse,
     type: JobTracker['type'],
-    datasetId: number,
+    datasetId: string, // Changed to string
     datasetName: string,
     config?: Record<string, unknown>
   ): JobTracker {

@@ -18,7 +18,7 @@ interface UseJobTrackingReturn {
   createJob: (
     jobResponse: NormalizationJobResponse,
     type: JobTracker['type'],
-    datasetId: number,
+    datasetId: string,
     datasetName: string,
     config?: Record<string, unknown>
   ) => Promise<JobTracker>;
@@ -154,7 +154,7 @@ export function useJobTracking(options: UseJobTrackingOptions = {}): UseJobTrack
   const createJob = useCallback(async (
     jobResponse: NormalizationJobResponse,
     type: JobTracker['type'],
-    datasetId: number,
+    datasetId: string,
     datasetName: string,
     config?: Record<string, unknown>
   ): Promise<JobTracker> => {

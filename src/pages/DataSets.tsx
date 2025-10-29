@@ -17,7 +17,7 @@ export default function DataSets() {
   const { resetDataSet, loading: resetLoading } = useResetDataSet();
   const [showUpload, setShowUpload] = useState(false);
   const [searchParams] = useSearchParams();
-  const [openDropdown, setOpenDropdown] = useState<number | null>(null);
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null); // Changed to string
   const [selectedDataset, setSelectedDataset] = useState<DataSet | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
@@ -47,7 +47,7 @@ export default function DataSets() {
     };
   }, [openDropdown]);
 
-  const handleUploadSuccess = (_datasetId: number, _fileName: string) => {
+  const handleUploadSuccess = (_datasetId: string, _fileName: string) => {
     // Refresh the datasets list after successful upload
     refetch();
     setShowUpload(false);
@@ -185,7 +185,7 @@ export default function DataSets() {
     setSelectedDataset(null);
   };
 
-  const toggleDropdown = (datasetId: number) => {
+  const toggleDropdown = (datasetId: string) => {
     setOpenDropdown(openDropdown === datasetId ? null : datasetId);
   };
 

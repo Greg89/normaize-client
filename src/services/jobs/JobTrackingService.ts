@@ -29,7 +29,7 @@ export class JobTrackingService {
   async createJob(
     jobResponse: NormalizationJobResponse,
     type: JobTracker['type'],
-    datasetId: number,
+    datasetId: string,
     datasetName: string,
     config?: Record<string, unknown>
   ): Promise<JobTracker> {
@@ -84,7 +84,7 @@ export class JobTrackingService {
   /**
    * Get jobs for a specific dataset
    */
-  async getJobsForDataset(datasetId: number): Promise<JobTracker[]> {
+  async getJobsForDataset(datasetId: string): Promise<JobTracker[]> {
     return this.jobRepository.getByDatasetId(datasetId);
   }
 

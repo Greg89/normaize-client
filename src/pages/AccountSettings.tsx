@@ -34,7 +34,7 @@ export default function AccountSettings() {
 
   // UI state for user settings
   const [settings, setSettings] = useState<UserSettingsDto>({
-    id: 0,
+    id: '', // Changed from 0 to empty string for GUID
     userId: '',
     
     // Notification Settings

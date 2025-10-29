@@ -307,7 +307,7 @@ class ApiService {
     
     // Handle the new consistent API response structure
     if (result && typeof result === 'object' && 'data' in result && result.success) {
-      // Server returns { data: { dataSetId: 123, ... }, success: true, message: "..." }
+      // Server returns { data: { dataSetId: "guid-string", ... }, success: true, message: "..." }
       const uploadData = result.data;
       return {
         id: uploadData.dataSetId || uploadData.id,
@@ -320,11 +320,11 @@ class ApiService {
     throw new Error('Unexpected response structure from server');
   }
 
-  async deleteDataSet(id: number): Promise<void> {
+  async deleteDataSet(id: string): Promise<void> {
     await this.request(`/api/datasets/${id}`, { method: 'DELETE' });
   }
 
-  async resetDataSet(id: number, resetDto: DataSetResetDto): Promise<DataSet> {
+  async resetDataSet(id: string, resetDto: DataSetResetDto): Promise<DataSet> {
     const response = await this.request<DataSet>(`/api/datasets/${id}/reset`, {
       method: 'POST',
       body: JSON.stringify(resetDto),
@@ -333,7 +333,7 @@ class ApiService {
     return response.data;
   }
 
-  async updateDataSet(id: number, updates: { name?: string; description?: string; retentionExpiryDate?: string }): Promise<DataSet> { 
+  async updateDataSet(id: string, updates: { name?: string; description?: string; retentionExpiryDate?: string }): Promise<DataSet> { 
     const response = await this.request<DataSet>(`/api/datasets/${id}`, {
       method: 'PUT',
       body: JSON.stringify(updates),
@@ -342,12 +342,12 @@ class ApiService {
     return response.data;
   }
 
-  async getDataSetPreview(id: number): Promise<PreviewRow[]> {
+  async getDataSetPreview(id: string): Promise<PreviewRow[]> {
     const response = await this.request<PreviewRow[]>(`/api/datasets/${id}/preview`);
     return response.data;
   }
 
-  async removeDuplicates(dataSetId: number, request: RemoveDuplicateRowsRequest): Promise<NormalizationJobResponse> {
+  async removeDuplicates(dataSetId: string, request: RemoveDuplicateRowsRequest): Promise<NormalizationJobResponse> {
     const response = await this.request<NormalizationJobResponse>(`/api/datasets/${dataSetId}/remove-duplicates`, {
       method: 'POST',
       body: JSON.stringify(request),
@@ -370,7 +370,7 @@ class ApiService {
     name: string;
     description?: string;
     type: string;
-    dataSetId: number;
+    dataSetId: string; // Changed from number to string
     configuration?: unknown;
   }): Promise<Analysis> {
     const response = await this.request<Analysis>('/api/analyses', {
@@ -380,7 +380,7 @@ class ApiService {
     return response.data;
   }
 
-  async getAnalysis(id: number): Promise<Analysis> {
+  async getAnalysis(id: string): Promise<Analysis> { // Changed from number to string
     const response = await this.request<Analysis>(`/api/analyses/${id}`);
     return response.data;
   }

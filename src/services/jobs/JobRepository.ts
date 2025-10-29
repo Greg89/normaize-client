@@ -65,7 +65,7 @@ export class JobRepository implements IJobRepository {
     return allJobs.filter(job => job.status === status);
   }
 
-  async getByDatasetId(datasetId: number): Promise<JobTracker[]> {
+  async getByDatasetId(datasetId: string): Promise<JobTracker[]> { // Changed to string
     const allJobs = await this.getAll();
     return allJobs.filter(job => job.datasetId === datasetId);
   }

@@ -19,7 +19,7 @@ export interface IJobRepository {
   getById(jobId: string): Promise<JobTracker | null>;
   getAll(): Promise<JobTracker[]>;
   getByStatus(status: NormalizationJobStatus): Promise<JobTracker[]>;
-  getByDatasetId(datasetId: number): Promise<JobTracker[]>;
+  getByDatasetId(datasetId: string): Promise<JobTracker[]>; // Changed to string
 }
 
 /**
@@ -45,7 +45,7 @@ export interface IJobTrackerFactory {
   createFromResponse(
     response: NormalizationJobResponse,
     type: JobTracker['type'],
-    datasetId: number,
+    datasetId: string, // Changed to string
     datasetName: string,
     config?: Record<string, unknown>
   ): JobTracker;
