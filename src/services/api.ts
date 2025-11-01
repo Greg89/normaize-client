@@ -305,15 +305,10 @@ class ApiService {
 
     const result = await response.json();
     
-    // Handle the new consistent API response structure
+    // New DDD API returns: { success: true, data: DataSetResponse, message: "..." }
     if (result && typeof result === 'object' && 'data' in result && result.success) {
-      // Server returns { data: { dataSetId: "guid-string", ... }, success: true, message: "..." }
-      const uploadData = result.data;
-      return {
-        id: uploadData.dataSetId || uploadData.id,
-        message: result.message || 'Upload successful',
-        success: result.success
-      };
+      // Return the full DataSetResponse object which includes rich metadata
+      return result.data as DataSetUploadResponse;
     }
     
     // Fallback for unexpected response structure

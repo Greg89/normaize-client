@@ -8,6 +8,7 @@ import { useDataSets, useDeleteDataSet, useUpdateDataSet, useResetDataSet } from
 import { DataSet, ResetType } from '../types';
 import { logger } from '../utils/logger';
 import { formatFileSize } from '../utils/format';
+import { getUploadedAt, getFileSize, getRowCount, getColumnCount } from '../utils/datasetHelpers';
 
 export default function DataSets() {
   const [includeDeleted, setIncludeDeleted] = useState(false);
@@ -280,10 +281,10 @@ export default function DataSets() {
                         <p className="text-sm text-gray-600 mt-1">{dataset.description}</p>
                       )}
                       <div className="flex items-center space-x-4 mt-2 text-xs text-gray-400">
-                        <span>Uploaded: {new Date(dataset.uploadedAt).toLocaleDateString()}</span>
-                        <span>Size: {formatFileSize(dataset.fileSize)}</span>
-                        <span>Rows: {dataset.rowCount}</span>
-                        <span>Columns: {dataset.columnCount}</span>
+                        <span>Uploaded: {new Date(getUploadedAt(dataset)).toLocaleDateString()}</span>
+                        <span>Size: {formatFileSize(getFileSize(dataset))}</span>
+                        <span>Rows: {getRowCount(dataset).toLocaleString()}</span>
+                        <span>Columns: {getColumnCount(dataset)}</span>
                       </div>
                     </div>
                     <div className="flex items-center space-x-2">

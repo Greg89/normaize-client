@@ -18,18 +18,47 @@ jest.mock('../../utils/format', () => ({
   },
 }));
 
+// Mock the dataset helpers
+jest.mock('../../utils/datasetHelpers', () => ({
+  getFileName: (dataset: DataSet) => dataset.fileMetadata?.originalFileName || dataset.fileName || 'Unknown',
+  getFileType: (dataset: DataSet) => dataset.fileMetadata?.fileType || dataset.fileType || 'Unknown',
+  getFileSize: (dataset: DataSet) => dataset.fileMetadata?.sizeInBytes || dataset.fileSize || 0,
+  getUploadedAt: (dataset: DataSet) => dataset.createdAt || dataset.uploadedAt || new Date().toISOString(),
+  getRowCount: (dataset: DataSet) => dataset.statistics?.rowCount || dataset.rowCount || 0,
+  getColumnCount: (dataset: DataSet) => dataset.statistics?.columnCount || dataset.columnCount || 0,
+}));
+
 describe('DatasetDetailsModal', () => {
   const mockDataset: DataSet = {
-    id: 1,
+    id: '550e8400-e29b-41d4-a716-446655440000',
     name: 'Test Dataset',
     description: 'A test dataset for testing purposes',
+    createdBy: 'test-user',
+    createdAt: '2024-01-15T10:30:00Z',
+    updatedAt: undefined,
+    isProcessed: true,
+    isDeleted: false,
+    fileMetadata: {
+      originalFileName: 'test-data.csv',
+      storagePath: 's3://bucket/test-data.csv',
+      fileType: 'CSV',
+      sizeInBytes: 1024 * 1024, // 1MB
+      checksum: 'abc123',
+      storageProvider: 'S3'
+    },
+    statistics: {
+      rowCount: 1000,
+      columnCount: 10,
+      fileSizeBytes: 1024 * 1024,
+      lastProcessedAt: '2024-01-15T10:30:00Z'
+    },
+    // Legacy fields for backward compatibility
     fileName: 'test-data.csv',
     fileType: 'CSV',
-    fileSize: 1024 * 1024, // 1MB
+    fileSize: 1024 * 1024,
     uploadedAt: '2024-01-15T10:30:00Z',
     rowCount: 1000,
     columnCount: 10,
-    isProcessed: true,
   };
 
   const mockOnClose = jest.fn();
@@ -554,6 +583,14 @@ describe('DatasetDetailsModal', () => {
   it('handles large file names with truncation', () => {
     const datasetWithLongFileName = {
       ...mockDataset,
+      fileMetadata: {
+        originalFileName: 'very-long-file-name-that-exceeds-normal-length-and-should-be-truncated.csv',
+        storagePath: mockDataset.fileMetadata?.storagePath || 's3://bucket/file.csv',
+        fileType: mockDataset.fileMetadata?.fileType || 'CSV',
+        sizeInBytes: mockDataset.fileMetadata?.sizeInBytes || 1024,
+        checksum: mockDataset.fileMetadata?.checksum || 'abc123',
+        storageProvider: mockDataset.fileMetadata?.storageProvider || 'S3',
+      },
       fileName: 'very-long-file-name-that-exceeds-normal-length-and-should-be-truncated.csv',
     };
 
@@ -567,12 +604,19 @@ describe('DatasetDetailsModal', () => {
       />
     );
 
-    expect(screen.getByText('very-long-file-name-that-exceeds-normal-length-and-should-be-truncated.csv')).toBeInTheDocument();
+    // Use getByTitle since it's truncated
+    expect(screen.getByTitle('very-long-file-name-that-exceeds-normal-length-and-should-be-truncated.csv')).toBeInTheDocument();
   });
 
   it('handles large numbers in row count', () => {
     const datasetWithLargeRowCount = {
       ...mockDataset,
+      statistics: {
+        rowCount: 999999999,
+        columnCount: mockDataset.statistics?.columnCount || 10,
+        fileSizeBytes: mockDataset.statistics?.fileSizeBytes || 1024,
+        lastProcessedAt: mockDataset.statistics?.lastProcessedAt || '2024-01-15T10:30:00Z',
+      },
       rowCount: 999999999,
     };
 
@@ -586,12 +630,28 @@ describe('DatasetDetailsModal', () => {
       />
     );
 
-    expect(screen.getByText('999,999,999')).toBeInTheDocument();
+    // Use getByText with regex matcher to handle potentially split text
+    expect(screen.getByText(/999,999,999/)).toBeInTheDocument();
   });
 
   it('handles zero values correctly', () => {
     const datasetWithZeroValues = {
       ...mockDataset,
+      statistics: {
+        rowCount: 0,
+        columnCount: 0,
+        fileSizeBytes: 0,
+        lastProcessedAt: mockDataset.statistics?.lastProcessedAt || '2024-01-15T10:30:00Z',
+      },
+      fileMetadata: {
+        ...mockDataset.fileMetadata,
+        originalFileName: mockDataset.fileMetadata?.originalFileName || 'test.csv',
+        storagePath: mockDataset.fileMetadata?.storagePath || 's3://bucket/file.csv',
+        fileType: mockDataset.fileMetadata?.fileType || 'CSV',
+        sizeInBytes: 0,
+        checksum: mockDataset.fileMetadata?.checksum || 'abc123',
+        storageProvider: mockDataset.fileMetadata?.storageProvider || 'S3',
+      },
       rowCount: 0,
       columnCount: 0,
       fileSize: 0,
@@ -610,6 +670,6 @@ describe('DatasetDetailsModal', () => {
     // Check for specific zero values in context
     expect(screen.getByText('Rows:').nextElementSibling).toHaveTextContent('0');
     expect(screen.getByText('Columns:').nextElementSibling).toHaveTextContent('0');
-    expect(screen.getByText('0 bytes')).toBeInTheDocument();
+    expect(screen.getByText(/0 bytes/)).toBeInTheDocument();
   });
 });

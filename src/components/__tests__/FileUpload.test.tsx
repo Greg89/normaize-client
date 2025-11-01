@@ -33,9 +33,32 @@ describe('FileUpload', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     
-    // Mock apiService
+    // Mock apiService with new DDD response structure
     const { apiService } = require('../../services/api');
-    apiService.uploadDataSet.mockResolvedValue({ id: 123 });
+    apiService.uploadDataSet.mockResolvedValue({
+      id: '550e8400-e29b-41d4-a716-446655440000', // GUID instead of number
+      name: 'test-file',
+      description: 'Uploaded file',
+      createdBy: 'test-user',
+      createdAt: '2025-10-31T00:00:00Z',
+      updatedAt: null,
+      isProcessed: false,
+      isDeleted: false,
+      fileMetadata: {
+        originalFileName: 'test.csv',
+        storagePath: 's3://bucket/test.csv',
+        fileType: 'CSV',
+        sizeInBytes: 1024,
+        checksum: 'abc123',
+        storageProvider: 'S3'
+      },
+      statistics: {
+        rowCount: 100,
+        columnCount: 5,
+        fileSizeBytes: 1024,
+        lastProcessedAt: '2025-10-31T00:00:00Z'
+      }
+    });
   });
 
   it('renders without crashing', () => {

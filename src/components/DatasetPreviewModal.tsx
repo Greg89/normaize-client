@@ -4,6 +4,7 @@ import { XMarkIcon, DocumentTextIcon, ExclamationTriangleIcon } from '@heroicons
 import { DataSet } from '../types';
 import { apiService } from '../services/api';
 import { logger } from '../utils/logger';
+import { getRowCount, getFileType } from '../utils/datasetHelpers';
 
 interface PreviewRow {
   [key: string]: string | number | boolean | null;
@@ -227,7 +228,7 @@ export default function DatasetPreviewModal({
                           </div>
                           <div>
                             <p className="text-gray-500">Total Rows</p>
-                            <p className="text-lg font-semibold text-gray-900">{dataset?.rowCount.toLocaleString()}</p>
+                            <p className="text-lg font-semibold text-gray-900">{dataset ? getRowCount(dataset).toLocaleString() : '0'}</p>
                           </div>
                           <div>
                             <p className="text-gray-500">Columns</p>
@@ -235,7 +236,7 @@ export default function DatasetPreviewModal({
                           </div>
                           <div>
                             <p className="text-gray-500">File Type</p>
-                            <p className="text-lg font-semibold text-gray-900">{dataset?.fileType}</p>
+                            <p className="text-lg font-semibold text-gray-900">{dataset ? getFileType(dataset) : 'Unknown'}</p>
                           </div>
                         </div>
                       </div>

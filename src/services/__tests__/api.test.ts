@@ -293,10 +293,10 @@ describe('ApiService', () => {
         status: 204
       });
 
-      await expect(apiService.deleteDataSet(1)).resolves.toBeUndefined();
+      await expect(apiService.deleteDataSet('550e8400-e29b-41d4-a716-446655440000')).resolves.toBeUndefined();
 
       expect(global.fetch).toHaveBeenCalledWith(
-        expect.stringContaining('/api/datasets/1'),
+        expect.stringContaining('/api/datasets/550e8400-e29b-41d4-a716-446655440000'),
         expect.objectContaining({
           method: 'DELETE'
         })
@@ -314,10 +314,10 @@ describe('ApiService', () => {
         })
       });
 
-      const result = await apiService.updateDataSet(1, updates);
+      const result = await apiService.updateDataSet('550e8400-e29b-41d4-a716-446655440000', updates);
 
       expect(global.fetch).toHaveBeenCalledWith(
-        expect.stringContaining('/api/datasets/1'),
+        expect.stringContaining('/api/datasets/550e8400-e29b-41d4-a716-446655440000'),
         expect.objectContaining({
           method: 'PUT',
           body: JSON.stringify(updates)
@@ -337,10 +337,10 @@ describe('ApiService', () => {
         })
       });
 
-      const result = await apiService.getDataSetPreview(1);
+      const result = await apiService.getDataSetPreview('550e8400-e29b-41d4-a716-446655440000');
 
       expect(global.fetch).toHaveBeenCalledWith(
-        expect.stringContaining('/api/datasets/1/preview'),
+        expect.stringContaining('/api/datasets/550e8400-e29b-41d4-a716-446655440000/preview'),
         expect.any(Object)
       );
       expect(result).toEqual(mockPreview);
@@ -386,7 +386,7 @@ describe('ApiService', () => {
         name: 'New Analysis',
         description: 'New Description',
         type: 'classification',
-        dataSetId: 1,
+        dataSetId: '550e8400-e29b-41d4-a716-446655440000',
         configuration: {}
       };
 
@@ -421,10 +421,10 @@ describe('ApiService', () => {
         })
       });
 
-      const result = await apiService.getAnalysis(1);
+      const result = await apiService.getAnalysis('550e8400-e29b-41d4-a716-446655440000');
 
       expect(global.fetch).toHaveBeenCalledWith(
-        expect.stringContaining('/api/analyses/1'),
+        expect.stringContaining('/api/analyses/550e8400-e29b-41d4-a716-446655440000'),
         expect.any(Object)
       );
       expect(result).toEqual(mockAnalysis);
@@ -513,18 +513,37 @@ describe('ApiService', () => {
     it('should upload dataset file', async () => {
       const file = new File(['test content'], 'test.csv', { type: 'text/csv' });
       const mockUploadResponse = {
-        dataSetId: 123,
-        message: 'Upload successful',
-        success: true
+        id: '550e8400-e29b-41d4-a716-446655440000',
+        name: 'Test Dataset',
+        description: 'Test Description',
+        createdBy: 'test-user',
+        createdAt: '2025-10-31T00:00:00Z',
+        updatedAt: null,
+        isProcessed: false,
+        isDeleted: false,
+        fileMetadata: {
+          originalFileName: 'test.csv',
+          storagePath: 's3://bucket/test.csv',
+          fileType: 'CSV',
+          sizeInBytes: 12,
+          checksum: 'abc123',
+          storageProvider: 'S3'
+        },
+        statistics: {
+          rowCount: 0,
+          columnCount: 0,
+          fileSizeBytes: 12,
+          lastProcessedAt: '2025-10-31T00:00:00Z'
+        }
       };
 
       (global.fetch as jest.Mock).mockResolvedValue({
         ok: true,
-        status: 200,
+        status: 201, // HTTP 201 Created for new DDD API
         json: jest.fn().mockResolvedValue({
           success: true,
           data: mockUploadResponse,
-          message: 'Upload successful'
+          message: 'Dataset uploaded successfully'
         })
       });
 
@@ -541,11 +560,11 @@ describe('ApiService', () => {
           })
         })
       );
-      expect(result).toEqual({
-        id: 123,
-        message: 'Upload successful',
-        success: true
-      });
+      // Result should be the full DataSetResponse object
+      expect(result).toEqual(mockUploadResponse);
+      expect(result.id).toBe('550e8400-e29b-41d4-a716-446655440000');
+      expect(result.fileMetadata).toBeDefined();
+      expect(result.statistics).toBeDefined();
     });
 
     it('should handle upload failure', async () => {

@@ -4,6 +4,7 @@ import { useDataSets } from '../hooks/useApi';
 import { DataSet } from '../types';
 import { logger } from '../utils/logger';
 import { formatFileSize } from '../utils/format';
+import { getUploadedAt, getFileSize, getRowCount, getColumnCount } from '../utils/datasetHelpers';
 import { RemoveDuplicates, ComingSoonTool } from '../components/normalization';
 import { 
   CogIcon, 
@@ -180,7 +181,7 @@ export default function Normalization() {
           Dataset: <span className="font-medium">{selectedDataset?.name}</span>
         </p>
         <div className="text-xs text-gray-500 mt-1">
-          {selectedDataset?.rowCount.toLocaleString()} rows • {selectedDataset?.columnCount} columns
+          {selectedDataset ? getRowCount(selectedDataset).toLocaleString() : 0} rows • {selectedDataset ? getColumnCount(selectedDataset) : 0} columns
         </div>
       </div>
 
@@ -374,10 +375,10 @@ export default function Normalization() {
                     <p className="text-gray-600 mb-3">{dataset.description}</p>
                   )}
                   <div className="flex items-center space-x-6 text-sm text-gray-500">
-                    <span>Uploaded: {new Date(dataset.uploadedAt).toLocaleDateString()}</span>
-                    <span>Size: {formatFileSize(dataset.fileSize)}</span>
-                    <span>Rows: {dataset.rowCount.toLocaleString()}</span>
-                    <span>Columns: {dataset.columnCount}</span>
+                    <span>Uploaded: {new Date(getUploadedAt(dataset)).toLocaleDateString()}</span>
+                    <span>Size: {formatFileSize(getFileSize(dataset))}</span>
+                    <span>Rows: {getRowCount(dataset).toLocaleString()}</span>
+                    <span>Columns: {getColumnCount(dataset)}</span>
                   </div>
                 </div>
               </div>

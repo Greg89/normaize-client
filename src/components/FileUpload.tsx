@@ -2,6 +2,7 @@ import React, { useState, useCallback, useRef } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { Upload, X, CheckCircle, AlertCircle, Loader } from 'lucide-react';
 import { apiService } from '../services/api';
+import { logger } from '../utils/logger';
 
 interface FileUploadProps {
   onUploadSuccess: (datasetId: string, fileName: string) => void; // Changed to string
@@ -38,19 +39,28 @@ const FileUpload: React.FC<FileUploadProps> = ({
     abortControllerRef.current = new AbortController();
 
     try {
-      // Use ApiService instead of direct fetch to ensure correct base URL
+      // Use ApiService to upload - now returns full DataSetResponse
       const result = await apiService.uploadDataSet(
         file, 
         file.name.replace(/\.[^/.]+$/, ''), 
         `Uploaded on ${new Date().toLocaleString()}`
       );
       
-      // The ApiService now returns the correct structure
+      // New DDD API returns full DataSetResponse with rich metadata
       const datasetId = result.id;
       
       if (!datasetId) {
         throw new Error('Upload succeeded but no dataset ID returned from server');
       }
+      
+      // Log the rich response for debugging
+      await logger.info('Upload successful - Dataset details', {
+        id: result.id,
+        name: result.name,
+        fileMetadata: result.fileMetadata,
+        statistics: result.statistics,
+        isProcessed: result.isProcessed
+      });
       
       setUploads(prev => prev.map((upload, index) => 
         index === uploadIndex 

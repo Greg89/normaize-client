@@ -17,12 +17,36 @@ export interface PaginatedResponse<T> extends ApiResponse<T[]> {
   hasPrevious: boolean;
 }
 
-// Upload Response Types
+// Upload Response Types - matches new DDD API DataSetResponse
 export interface DataSetUploadResponse {
-  id: string; // Changed from number to string (GUID)
-  message: string;
-  success: boolean;
-  dataSetId?: string; // For backward compatibility - also changed to string
+  id: string; // GUID
+  name: string;
+  description: string;
+  createdBy: string;
+  createdAt: string; // ISO date string
+  updatedAt?: string; // ISO date string
+  isProcessed: boolean;
+  isDeleted: boolean;
+  fileMetadata?: FileMetadataResponse;
+  statistics: DatasetStatisticsResponse;
+}
+
+// File Metadata Response
+export interface FileMetadataResponse {
+  originalFileName: string;
+  storagePath: string;
+  fileType: string;
+  sizeInBytes: number;
+  checksum: string;
+  storageProvider: string;
+}
+
+// Dataset Statistics Response
+export interface DatasetStatisticsResponse {
+  rowCount: number;
+  columnCount: number;
+  fileSizeBytes: number;
+  lastProcessedAt: string; // ISO date string
 }
 
 // User Profile Types - matching server DTOs (camelCase for JSON)
@@ -103,19 +127,26 @@ export interface UpdateProfileRequest {
   preferences?: Partial<UserPreferences>;
 }
 
-// DataSet Types
+// DataSet Types - updated to match DDD API DataSetResponse
 export interface DataSet {
-  id: string; // Changed from number to string (GUID)
+  id: string; // GUID
   name: string;
   description?: string;
-  fileName: string;
-  fileType: string;
-  fileSize: number;
-  uploadedAt: string;
-  rowCount: number;
-  columnCount: number;
+  createdBy: string;
+  createdAt: string; // ISO date string
+  updatedAt?: string; // ISO date string
   isProcessed: boolean;
   isDeleted?: boolean;
+  fileMetadata?: FileMetadataResponse;
+  statistics: DatasetStatisticsResponse;
+  
+  // Legacy fields for backward compatibility (derived from new structure)
+  fileName?: string; // Will be derived from fileMetadata.originalFileName
+  fileType?: string; // Will be derived from fileMetadata.fileType
+  fileSize?: number; // Will be derived from fileMetadata.sizeInBytes
+  uploadedAt?: string; // Will be derived from createdAt
+  rowCount?: number; // Will be derived from statistics.rowCount
+  columnCount?: number; // Will be derived from statistics.columnCount
   retentionExpiryDate?: string; // ISO date string for when the dataset will be automatically deleted
   schema?: string; // JSON string containing column names array
   previewData?: string; // JSON string containing preview data with columns array

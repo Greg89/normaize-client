@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { DataSet } from '../types';
 import { formatFileSize } from '../utils/format';
+import { getFileName, getFileType, getFileSize, getUploadedAt, getRowCount, getColumnCount } from '../utils/datasetHelpers';
 
 // Format date function that matches test expectations
 const formatDate = (dateString: string | undefined): string => {
@@ -143,27 +144,27 @@ export default function DatasetDetailsModal({
             <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm text-gray-600">
               <div className="flex justify-between">
                 <span>File Name:</span>
-                <span className="font-mono truncate max-w-xs ml-2" title={dataset.fileName}>{dataset.fileName}</span>
+                <span className="font-mono truncate max-w-xs ml-2" title={getFileName(dataset)}>{getFileName(dataset)}</span>
               </div>
               <div className="flex justify-between">
                 <span>File Type:</span>
-                <span>{dataset.fileType}</span>
+                <span>{getFileType(dataset)}</span>
               </div>
               <div className="flex justify-between">
                 <span>File Size:</span>
-                <span>{formatFileSize(dataset.fileSize)}</span>
+                <span>{formatFileSize(getFileSize(dataset))}</span>
               </div>
               <div className="flex justify-between">
                 <span>Uploaded:</span>
-                <span>{new Date(dataset.uploadedAt).toLocaleDateString()}</span>
+                <span>{new Date(getUploadedAt(dataset)).toLocaleDateString()}</span>
               </div>
               <div className="flex justify-between">
                 <span>Rows:</span>
-                <span>{dataset.rowCount.toLocaleString()}</span>
+                <span>{getRowCount(dataset).toLocaleString()}</span>
               </div>
               <div className="flex justify-between">
                 <span>Columns:</span>
-                <span>{dataset.columnCount}</span>
+                <span>{getColumnCount(dataset)}</span>
               </div>
               <div className="flex justify-between">
                 <span>Status:</span>
