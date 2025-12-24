@@ -16,14 +16,18 @@ setupGlobalErrorHandlers();
 
 const rootElement = document.getElementById('root');
 if (rootElement) {
+  const disableAuth = import.meta.env['VITE_DISABLE_AUTH'] === 'true';
+
+  const appTree = (
+    <BrowserRouter>
+      <App />
+      <Toaster position="top-right" />
+    </BrowserRouter>
+  );
+
   ReactDOM.createRoot(rootElement).render(
     <React.StrictMode>
-      <Auth0ProviderWrapper>
-        <BrowserRouter>
-          <App />
-          <Toaster position="top-right" />
-        </BrowserRouter>
-      </Auth0ProviderWrapper>
+      {disableAuth ? appTree : <Auth0ProviderWrapper>{appTree}</Auth0ProviderWrapper>}
     </React.StrictMode>
   );
 } 

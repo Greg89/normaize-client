@@ -98,6 +98,18 @@ class ApiService {
 
       // Handle 401 Unauthorized - attempt token refresh first
       if (response.status === 401) {
+        // If we didn't send a token, don't force logout.
+        // This commonly happens when Auth0 token retrieval fails transiently (e.g. "login required")
+        // and aggressively logging out creates a redirect loop.
+        if (!headers['Authorization']) {
+          await logger.warn('401 Unauthorized without token - not forcing re-authentication', {
+            url,
+            method: options.method || 'GET',
+            endpoint,
+          });
+          throw new Error('Authentication required');
+        }
+
         await logger.warn('401 Unauthorized detected, attempting token refresh', {
           url,
           method: options.method || 'GET',
@@ -203,11 +215,12 @@ class ApiService {
               endpoint,
               error: tokenError,
             });
-            
+
+            // We only reach this block when we had an Authorization header to begin with.
             if (this.forceReAuth) {
               await this.forceReAuth();
             }
-            
+
             throw new Error('Authentication required - redirecting to login');
           }
         }
