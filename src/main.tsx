@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
 import { Auth0ProviderWrapper } from './components/Auth0Provider'
+import { AuthStateProvider } from './components/AuthStateProvider'
 import { setupGlobalErrorHandlers } from './utils/globalErrorHandlers'
 // Performance monitoring is automatically initialized in the PerformanceMonitor constructor
 import { initSentry } from './utils/sentry'
@@ -27,7 +28,13 @@ if (rootElement) {
 
   ReactDOM.createRoot(rootElement).render(
     <React.StrictMode>
-      {disableAuth ? appTree : <Auth0ProviderWrapper>{appTree}</Auth0ProviderWrapper>}
+      {disableAuth ? (
+        <AuthStateProvider disableAuth={true}>{appTree}</AuthStateProvider>
+      ) : (
+        <Auth0ProviderWrapper>
+          <AuthStateProvider disableAuth={false}>{appTree}</AuthStateProvider>
+        </Auth0ProviderWrapper>
+      )}
     </React.StrictMode>
   );
 } 

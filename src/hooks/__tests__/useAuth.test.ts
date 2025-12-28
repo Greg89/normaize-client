@@ -1,6 +1,8 @@
+import React from 'react';
 import { renderHook, act } from '@testing-library/react';
 import { useAuth0 } from '@auth0/auth0-react';
 import { useAuth } from '../useAuth';
+import { AuthStateProvider } from '../../components/AuthStateProvider';
 import { logger } from '../../utils/logger';
 
 // Mock the Auth0 hook
@@ -19,6 +21,9 @@ jest.mock('../../utils/logger', () => ({
 
 describe('useAuth', () => {
   let mockUseAuth0: jest.Mock;
+
+  const wrapper = ({ children }: { children: React.ReactNode }) =>
+    React.createElement(AuthStateProvider, { disableAuth: false }, children);
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -48,7 +53,7 @@ describe('useAuth', () => {
         error: null,
       });
 
-      const { result } = renderHook(() => useAuth());
+      const { result } = renderHook(() => useAuth(), { wrapper });
 
       expect(result.current.isAuthenticated).toBe(true);
       expect(result.current.isLoading).toBe(false);
@@ -66,7 +71,7 @@ describe('useAuth', () => {
         error: null,
       });
 
-      const { result } = renderHook(() => useAuth());
+      const { result } = renderHook(() => useAuth(), { wrapper });
 
       expect(result.current.isLoading).toBe(true);
     });
@@ -82,7 +87,7 @@ describe('useAuth', () => {
         error: null,
       });
 
-      const { result } = renderHook(() => useAuth());
+      const { result } = renderHook(() => useAuth(), { wrapper });
 
       expect(result.current.isAuthenticated).toBe(false);
       expect(result.current.user).toBe(null);
@@ -102,7 +107,7 @@ describe('useAuth', () => {
         error: null,
       });
 
-      const { result } = renderHook(() => useAuth());
+      const { result } = renderHook(() => useAuth(), { wrapper });
 
       await act(async () => {
         await result.current.login();
@@ -123,7 +128,7 @@ describe('useAuth', () => {
         error: null,
       });
 
-      const { result } = renderHook(() => useAuth());
+      const { result } = renderHook(() => useAuth(), { wrapper });
 
       await expect(act(async () => {
         await result.current.login();
@@ -145,7 +150,7 @@ describe('useAuth', () => {
         error: null,
       });
 
-      const { result } = renderHook(() => useAuth());
+      const { result } = renderHook(() => useAuth(), { wrapper });
 
       const token = await act(async () => {
         return await result.current.getToken();
@@ -171,7 +176,7 @@ describe('useAuth', () => {
         error: null,
       });
 
-      const { result } = renderHook(() => useAuth());
+      const { result } = renderHook(() => useAuth(), { wrapper });
 
       const token = await act(async () => {
         return await result.current.getToken();
@@ -193,7 +198,7 @@ describe('useAuth', () => {
         error: null,
       });
 
-      const { result } = renderHook(() => useAuth());
+      const { result } = renderHook(() => useAuth(), { wrapper });
 
       const token = await act(async () => {
         return await result.current.getToken();
@@ -220,7 +225,7 @@ describe('useAuth', () => {
         error: mockError,
       });
 
-      renderHook(() => useAuth());
+      renderHook(() => useAuth(), { wrapper });
 
       expect(logger.warn).toHaveBeenCalledWith('Authentication error detected', {
         error: 'Invalid credentials',
@@ -241,7 +246,7 @@ describe('useAuth', () => {
         error: mockError,
       });
 
-      renderHook(() => useAuth());
+      renderHook(() => useAuth(), { wrapper });
 
       expect(logger.warn).toHaveBeenCalledWith('Authentication error detected', {
         error: 'Authentication failed',
@@ -260,7 +265,7 @@ describe('useAuth', () => {
         error: mockError,
       });
 
-      renderHook(() => useAuth());
+      renderHook(() => useAuth(), { wrapper });
 
       expect(logger.warn).toHaveBeenCalledWith('Authentication error detected', {
         error: 'Unknown error',
@@ -278,7 +283,7 @@ describe('useAuth', () => {
         error: null,
       });
 
-      renderHook(() => useAuth());
+      renderHook(() => useAuth(), { wrapper });
 
       expect(logger.warn).not.toHaveBeenCalled();
     });
@@ -286,7 +291,7 @@ describe('useAuth', () => {
 
   describe('hook return values', () => {
     it('should return all expected properties', () => {
-      const { result } = renderHook(() => useAuth());
+      const { result } = renderHook(() => useAuth(), { wrapper });
 
       expect(result.current).toHaveProperty('isAuthenticated');
       expect(result.current).toHaveProperty('isLoading');
@@ -299,7 +304,7 @@ describe('useAuth', () => {
     });
 
     it('should return functions for authentication actions', () => {
-      const { result } = renderHook(() => useAuth());
+      const { result } = renderHook(() => useAuth(), { wrapper });
 
       expect(typeof result.current.login).toBe('function');
       expect(typeof result.current.logout).toBe('function');
@@ -320,7 +325,7 @@ describe('useAuth', () => {
         error: undefined,
       });
 
-      const { result } = renderHook(() => useAuth());
+      const { result } = renderHook(() => useAuth(), { wrapper });
 
       expect(result.current.user).toBeUndefined();
       expect(result.current.error).toBeUndefined();
@@ -337,7 +342,7 @@ describe('useAuth', () => {
         error: null,
       });
 
-      const { result } = renderHook(() => useAuth());
+      const { result } = renderHook(() => useAuth(), { wrapper });
 
       expect(result.current.user).toBeNull();
       expect(result.current.error).toBeNull();
