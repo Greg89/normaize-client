@@ -6,14 +6,18 @@ import { getFileName, getFileType, getFileSize, getUploadedAt, getRowCount, getC
 // Format date function that matches test expectations
 const formatDate = (dateString: string | undefined): string => {
   if (!dateString) return 'Not set';
+
+  // If the API returns an ISO datetime (e.g. 2026-01-01T00:00:00Z),
+  // treat it as a date-only value to avoid timezone shifting in the UI.
+  const dateOnly = dateString.includes('T') ? dateString.split('T')[0] : dateString;
   
   // Handle YYYY-MM-DD format to avoid timezone issues
-  if (dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
-    const [year, month, day] = dateString.split('-').map(Number);
+  if (dateOnly.match(/^\d{4}-\d{2}-\d{2}$/)) {
+    const [year, month, day] = dateOnly.split('-').map(Number);
     return `${month}/${day}/${year}`;
   }
   
-  const date = new Date(dateString);
+  const date = new Date(dateOnly);
   if (isNaN(date.getTime())) return 'Invalid Date';
   return `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}`;
 };
@@ -44,9 +48,10 @@ export default function DatasetDetailsModal({
       
       // Convert ISO date string to YYYY-MM-DD format for the date input
       if (dataset.retentionExpiryDate) {
-        const date = new Date(dataset.retentionExpiryDate);
-        const formattedDate = date.toISOString().split('T')[0];
-        setTempRetentionDate(formattedDate || '');
+        const formattedDate = dataset.retentionExpiryDate.includes('T')
+          ? dataset.retentionExpiryDate.split('T')[0]
+          : dataset.retentionExpiryDate;
+        setTempRetentionDate(formattedDate);
       } else {
         setTempRetentionDate('');
       }
@@ -79,9 +84,10 @@ export default function DatasetDetailsModal({
       
       // Convert ISO date string to YYYY-MM-DD format for the date input
       if (dataset.retentionExpiryDate) {
-        const date = new Date(dataset.retentionExpiryDate);
-        const formattedDate = date.toISOString().split('T')[0];
-        setTempRetentionDate(formattedDate || '');
+        const formattedDate = dataset.retentionExpiryDate.includes('T')
+          ? dataset.retentionExpiryDate.split('T')[0]
+          : dataset.retentionExpiryDate;
+        setTempRetentionDate(formattedDate);
       } else {
         setTempRetentionDate('');
       }

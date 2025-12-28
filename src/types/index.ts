@@ -27,6 +27,7 @@ export interface DataSetUploadResponse {
   updatedAt?: string; // ISO date string
   isProcessed: boolean;
   isDeleted: boolean;
+  retentionExpiryDate?: string; // ISO date string
   fileMetadata?: FileMetadataResponse;
   statistics: DatasetStatisticsResponse;
 }
