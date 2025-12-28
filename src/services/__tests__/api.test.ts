@@ -178,8 +178,9 @@ describe('ApiService', () => {
 
       mockGetToken.mockResolvedValue(null);
 
-      await expect(apiService['request']('/test')).rejects.toThrow('Authentication required - redirecting to login');
-      expect(mockForceReAuth).toHaveBeenCalled();
+      // If no token was sent, the client should not force logout/re-auth (prevents redirect loops)
+      await expect(apiService['request']('/test')).rejects.toThrow('Authentication required');
+      expect(mockForceReAuth).not.toHaveBeenCalled();
     });
 
     it('should force re-auth if retry also gets 401', async () => {

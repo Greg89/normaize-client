@@ -10,6 +10,13 @@ interface PreviewRow {
   [key: string]: string | number | boolean | null;
 }
 
+type ColumnLike =
+  | string
+  | {
+      name?: unknown;
+      Name?: unknown;
+    };
+
 interface DatasetPreviewModalProps {
   dataset: DataSet | null;
   isOpen: boolean;
@@ -21,8 +28,34 @@ function isObject(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === 'object';
 }
 
-function hasRowsAndColumns(value: unknown): value is { rows: unknown; columns: unknown } {
-  return isObject(value) && 'rows' in value && 'columns' in value;
+function hasRowsAndColumns(value: unknown): value is Record<string, unknown> {
+  if (!isObject(value)) return false;
+  const hasRows = 'rows' in value || 'Rows' in value;
+  const hasColumns = 'columns' in value || 'Columns' in value;
+  return hasRows && hasColumns;
+}
+
+function extractRowsAndColumns(value: Record<string, unknown>): { rows: unknown; columns: unknown } {
+  const rows = 'rows' in value ? value['rows'] : value['Rows'];
+  const columns = 'columns' in value ? value['columns'] : value['Columns'];
+  return { rows, columns };
+}
+
+function normalizeColumns(columns: unknown): string[] {
+  if (!Array.isArray(columns)) return [];
+
+  // Server returns ColumnInfo[]; older/alternate shapes may return string[]
+  const asStrings = columns.filter((c): c is string => typeof c === 'string');
+  if (asStrings.length === columns.length) return asStrings;
+
+  return (columns as ColumnLike[])
+    .map((c) => {
+      if (typeof c === 'string') return c;
+      if (!c || typeof c !== 'object') return null;
+      const maybeName = 'name' in c ? (c as { name?: unknown }).name : (c as { Name?: unknown }).Name;
+      return typeof maybeName === 'string' ? maybeName : null;
+    })
+    .filter((c): c is string => typeof c === 'string' && c.length > 0);
 }
 
 function parsePreviewResponse(
@@ -33,8 +66,9 @@ function parsePreviewResponse(
   let columns: string[] = [];
 
   if (hasRowsAndColumns(response)) {
-    data = Array.isArray(response.rows) ? (response.rows as PreviewRow[]) : [];
-    columns = Array.isArray(response.columns) ? (response.columns as string[]) : [];
+    const extracted = extractRowsAndColumns(response);
+    data = Array.isArray(extracted.rows) ? (extracted.rows as PreviewRow[]) : [];
+    columns = normalizeColumns(extracted.columns);
     return { data, columns };
   }
 
@@ -42,8 +76,9 @@ function parsePreviewResponse(
     const inner = (response as { data: unknown }).data;
 
     if (hasRowsAndColumns(inner)) {
-      data = Array.isArray(inner.rows) ? (inner.rows as PreviewRow[]) : [];
-      columns = Array.isArray(inner.columns) ? (inner.columns as string[]) : [];
+      const extracted = extractRowsAndColumns(inner);
+      data = Array.isArray(extracted.rows) ? (extracted.rows as PreviewRow[]) : [];
+      columns = normalizeColumns(extracted.columns);
       return { data, columns };
     }
 
