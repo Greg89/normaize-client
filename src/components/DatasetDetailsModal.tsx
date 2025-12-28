@@ -9,7 +9,7 @@ const formatDate = (dateString: string | undefined): string => {
 
   // If the API returns an ISO datetime (e.g. 2026-01-01T00:00:00Z),
   // treat it as a date-only value to avoid timezone shifting in the UI.
-  const dateOnly = dateString.includes('T') ? dateString.split('T')[0] : dateString;
+  const dateOnly = dateString.replace(/T.*$/, '');
   
   // Handle YYYY-MM-DD format to avoid timezone issues
   if (dateOnly.match(/^\d{4}-\d{2}-\d{2}$/)) {
@@ -48,9 +48,7 @@ export default function DatasetDetailsModal({
       
       // Convert ISO date string to YYYY-MM-DD format for the date input
       if (dataset.retentionExpiryDate) {
-        const formattedDate = dataset.retentionExpiryDate.includes('T')
-          ? dataset.retentionExpiryDate.split('T')[0]
-          : dataset.retentionExpiryDate;
+        const formattedDate = dataset.retentionExpiryDate.replace(/T.*$/, '');
         setTempRetentionDate(formattedDate);
       } else {
         setTempRetentionDate('');
@@ -84,9 +82,7 @@ export default function DatasetDetailsModal({
       
       // Convert ISO date string to YYYY-MM-DD format for the date input
       if (dataset.retentionExpiryDate) {
-        const formattedDate = dataset.retentionExpiryDate.includes('T')
-          ? dataset.retentionExpiryDate.split('T')[0]
-          : dataset.retentionExpiryDate;
+        const formattedDate = dataset.retentionExpiryDate.replace(/T.*$/, '');
         setTempRetentionDate(formattedDate);
       } else {
         setTempRetentionDate('');

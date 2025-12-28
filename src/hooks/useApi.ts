@@ -3,10 +3,6 @@ import { ErrorHandler } from '../utils/errorHandling';
 import { apiService } from '../services/api';
 import { DataSet, DataSetResetDto, RemoveDuplicateRowsRequest } from '../types';
 
-interface PreviewRow {
-  [key: string]: string | number | boolean | null;
-}
-
 interface UseApiState<T> {
   data: T | null;
   loading: boolean;
@@ -165,7 +161,7 @@ export function useDatasetPreview() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const getPreview = useCallback(async (id: string): Promise<PreviewRow[] | null> => { // Changed to string
+  const getPreview = useCallback(async (id: string): Promise<unknown | null> => {
     setLoading(true);
     setError(null);
     
