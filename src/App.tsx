@@ -2,6 +2,7 @@ import { Routes, Route } from 'react-router-dom';
 import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
 import DataSets from './pages/DataSets';
+import Normalization from './pages/Normalization';
 import Analysis from './pages/Analysis';
 import Visualization from './pages/Visualization';
 import Login from './pages/Login';
@@ -69,6 +70,7 @@ function App() {
             <Routes>
               <Route path="/" element={<Dashboard />} />
               <Route path="/datasets" element={<DataSets />} />
+              <Route path="/normalization" element={<Normalization />} />
               <Route path="/analysis" element={<Analysis />} />
               <Route path="/visualization" element={<Visualization />} />
               <Route path="/account" element={<AccountSettings />} />

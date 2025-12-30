@@ -1,10 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { ErrorHandler } from '../utils/errorHandling';
 import { apiService } from '../services/api';
-
-interface PreviewRow {
-  [key: string]: string | number | boolean | null;
-}
+import { DataSet, DataSetResetDto, RemoveDuplicateRowsRequest } from '../types';
 
 interface UseApiState<T> {
   data: T | null;
@@ -72,7 +69,7 @@ export function useAnalyses() {
   return useApi(apiCall, []);
 }
 
-export function useAnalysis(id: number) {
+export function useAnalysis(id: string) { // Changed to string
   const apiCall = useCallback(() => apiService.getAnalysis(id), [id]);
   return useApi(apiCall, [id]);
 }
@@ -81,7 +78,7 @@ export function useDeleteDataSet() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const deleteDataSet = useCallback(async (id: number): Promise<boolean> => {
+  const deleteDataSet = useCallback(async (id: string): Promise<boolean> => { // Changed to string
     setLoading(true);
     setError(null);
     
@@ -108,19 +105,20 @@ export function useUpdateDataSet() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const updateDataSet = useCallback(async (id: number, updates: { name?: string; description?: string }): Promise<boolean> => {
+  const updateDataSet = useCallback(async (id: string, updates: { name?: string; description?: string; retentionExpiryDate?: string }): Promise<DataSet | null> => { // Changed to string
     setLoading(true);
     setError(null);
     
     try {
-      await apiService.updateDataSet(id, updates);
+      const updatedDataset = await apiService.updateDataSet(id, updates);
+      
       setLoading(false);
-      return true;
+      return updatedDataset;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to update dataset';
       setError(errorMessage);
       setLoading(false);
-      return false;
+      return null;
     }
   }, []);
 
@@ -131,11 +129,39 @@ export function useUpdateDataSet() {
   };
 }
 
+export function useResetDataSet() {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const resetDataSet = useCallback(async (id: string, resetDto: DataSetResetDto): Promise<DataSet | null> => { // Changed to string
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const resetDataset = await apiService.resetDataSet(id, resetDto);
+      
+      setLoading(false);
+      return resetDataset;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to reset dataset';
+      setError(errorMessage);
+      setLoading(false);
+      return null;
+    }
+  }, []);
+
+  return {
+    resetDataSet,
+    loading,
+    error,
+  };
+}
+
 export function useDatasetPreview() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const getPreview = useCallback(async (id: number): Promise<PreviewRow[] | null> => {
+  const getPreview = useCallback(async (id: string): Promise<unknown | null> => {
     setLoading(true);
     setError(null);
     
@@ -153,6 +179,33 @@ export function useDatasetPreview() {
 
   return {
     getPreview,
+    loading,
+    error,
+  };
+}
+
+export function useRemoveDuplicates() {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const removeDuplicates = useCallback(async (dataSetId: string, request: RemoveDuplicateRowsRequest): Promise<boolean> => { // Changed to string
+    setLoading(true);
+    setError(null);
+    
+    try {
+      await apiService.removeDuplicates(dataSetId, request);
+      setLoading(false);
+      return true;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to remove duplicates';
+      setError(errorMessage);
+      setLoading(false);
+      return false;
+    }
+  }, []);
+
+  return {
+    removeDuplicates,
     loading,
     error,
   };

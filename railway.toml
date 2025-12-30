@@ -2,10 +2,11 @@
 builder = "nixpacks"
 
 [deploy]
-startCommand = "npm run build && npm start"
+startCommand = "npm run build && npm run preview"
 healthcheckPath = "/"
-healthcheckTimeout = 300
-restartPolicyType = "on_failure"
+healthcheckTimeout = 60
+restartPolicyType = "ON_FAILURE"
 
 [deploy.envs]
-NODE_ENV = "production" 
+NODE_ENV = "production"
+VITE_NODE_ENV = "production" 

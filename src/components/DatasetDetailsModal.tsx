@@ -1,12 +1,32 @@
 import { useState, useEffect } from 'react';
 import { DataSet } from '../types';
 import { formatFileSize } from '../utils/format';
+import { getFileName, getFileType, getFileSize, getUploadedAt, getRowCount, getColumnCount } from '../utils/datasetHelpers';
+
+// Format date function that matches test expectations
+const formatDate = (dateString: string | undefined): string => {
+  if (!dateString) return 'Not set';
+
+  // If the API returns an ISO datetime (e.g. 2026-01-01T00:00:00Z),
+  // treat it as a date-only value to avoid timezone shifting in the UI.
+  const dateOnly = dateString.replace(/T.*$/, '');
+  
+  // Handle YYYY-MM-DD format to avoid timezone issues
+  if (dateOnly.match(/^\d{4}-\d{2}-\d{2}$/)) {
+    const [year, month, day] = dateOnly.split('-').map(Number);
+    return `${month}/${day}/${year}`;
+  }
+  
+  const date = new Date(dateOnly);
+  if (isNaN(date.getTime())) return 'Invalid Date';
+  return `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}`;
+};
 
 interface DatasetDetailsModalProps {
   dataset: DataSet | null;
   isOpen: boolean;
   onClose: () => void;
-  onSave: (updates: { name: string; description: string }) => Promise<boolean>;
+  onSave: (updates: { name: string; description: string; retentionExpiryDate?: string }) => Promise<boolean>;
   loading: boolean;
 }
 
@@ -19,18 +39,36 @@ export default function DatasetDetailsModal({
 }: DatasetDetailsModalProps) {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
+  const [tempRetentionDate, setTempRetentionDate] = useState('');
 
   useEffect(() => {
     if (dataset) {
       setName(dataset.name);
       setDescription(dataset.description || '');
+      
+      // Convert ISO date string to YYYY-MM-DD format for the date input
+      if (dataset.retentionExpiryDate) {
+        const formattedDate = dataset.retentionExpiryDate.replace(/T.*$/, '');
+        setTempRetentionDate(formattedDate);
+      } else {
+        setTempRetentionDate('');
+      }
     }
   }, [dataset]);
 
   const handleSave = async () => {
     if (!dataset) return;
     
-    const success = await onSave({ name, description });
+    const updates: { name: string; description: string; retentionExpiryDate?: string } = {
+      name,
+      description,
+    };
+    
+    if (tempRetentionDate.trim() !== '') {
+      updates.retentionExpiryDate = tempRetentionDate;
+    }
+    
+    const success = await onSave(updates);
     if (success) {
       onClose();
     }
@@ -41,15 +79,24 @@ export default function DatasetDetailsModal({
     if (dataset) {
       setName(dataset.name);
       setDescription(dataset.description || '');
+      
+      // Convert ISO date string to YYYY-MM-DD format for the date input
+      if (dataset.retentionExpiryDate) {
+        const formattedDate = dataset.retentionExpiryDate.replace(/T.*$/, '');
+        setTempRetentionDate(formattedDate);
+      } else {
+        setTempRetentionDate('');
+      }
     }
     onClose();
   };
+
 
   if (!isOpen || !dataset) return null;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+      <div className="bg-white rounded-lg p-6 w-full max-w-4xl mx-4 max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-semibold text-gray-900">Dataset Details</h2>
           <button
@@ -93,39 +140,57 @@ export default function DatasetDetailsModal({
             />
           </div>
 
-          {/* Read-only Fields */}
+          {/* Read-only Fields in Two Columns */}
           <div className="border-t pt-4">
-            <h3 className="text-sm font-medium text-gray-700 mb-2">Additional Information</h3>
-            <div className="space-y-2 text-sm text-gray-600">
+            <h3 className="text-sm font-medium text-gray-700 mb-4">Additional Information</h3>
+            <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm text-gray-600">
               <div className="flex justify-between">
                 <span>File Name:</span>
-                <span className="font-mono truncate max-w-xs ml-2" title={dataset.fileName}>{dataset.fileName}</span>
+                <span className="font-mono truncate max-w-xs ml-2" title={getFileName(dataset)}>{getFileName(dataset)}</span>
               </div>
               <div className="flex justify-between">
                 <span>File Type:</span>
-                <span>{dataset.fileType}</span>
+                <span>{getFileType(dataset)}</span>
               </div>
               <div className="flex justify-between">
                 <span>File Size:</span>
-                <span>{formatFileSize(dataset.fileSize)}</span>
+                <span>{formatFileSize(getFileSize(dataset))}</span>
               </div>
               <div className="flex justify-between">
                 <span>Uploaded:</span>
-                <span>{new Date(dataset.uploadedAt).toLocaleDateString()}</span>
+                <span>{new Date(getUploadedAt(dataset)).toLocaleDateString()}</span>
               </div>
               <div className="flex justify-between">
                 <span>Rows:</span>
-                <span>{dataset.rowCount.toLocaleString()}</span>
+                <span>{getRowCount(dataset).toLocaleString()}</span>
               </div>
               <div className="flex justify-between">
                 <span>Columns:</span>
-                <span>{dataset.columnCount}</span>
+                <span>{getColumnCount(dataset)}</span>
               </div>
               <div className="flex justify-between">
                 <span>Status:</span>
                 <span className={dataset.isProcessed ? 'text-green-600' : 'text-yellow-600'}>
                   {dataset.isProcessed ? 'Processed' : 'Pending'}
                 </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span>Retention Expiry:</span>
+                <div className="flex items-center space-x-2">
+                  <span>{formatDate(dataset.retentionExpiryDate)}</span>
+                  <label htmlFor="retention-date" className="sr-only">Retention Expiry Date</label>
+                  <input
+                    type="date"
+                    id="retention-date"
+                    aria-label="Retention Expiry Date"
+                    value={tempRetentionDate}
+                    onChange={(e) => setTempRetentionDate(e.target.value)}
+                    min={new Date().toISOString().split('T')[0]}
+                    className="px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white cursor-pointer hover:border-blue-400"
+                    title="Click to set retention expiry date"
+                    disabled={loading}
+                  />
+                </div>
               </div>
             </div>
           </div>

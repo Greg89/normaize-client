@@ -4,6 +4,12 @@ export default {
   setupFiles: ['<rootDir>/src/setupJest.ts'],
   setupFilesAfterEnv: ['<rootDir>/src/setupTests.ts'],
   extensionsToTreatAsEsm: ['.ts', '.tsx'],
+  globals: {
+    'ts-jest': {
+      useESM: true,
+      tsconfig: 'tsconfig.json',
+    },
+  },
   transform: {
     '^.+\\\\.(ts|tsx)$': ['ts-jest', {
       useESM: true,

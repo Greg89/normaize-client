@@ -1,24 +1,42 @@
-// Mock import.meta.env for Jest - this must be done before any modules are loaded
-if (typeof global !== 'undefined') {
-  Object.defineProperty(global, 'import', {
-    value: {
-      meta: {
-        env: {
-          VITE_API_URL: 'http://localhost:5000',
-          VITE_SEQ_URL: 'http://localhost:5341',
-          VITE_SEQ_API_KEY: 'test-api-key',
-          VITE_NODE_ENV: 'test',
-          VITE_SENTRY_DSN: 'test-sentry-dsn',
-          VITE_AUTH0_DOMAIN: 'test.auth0.com',
-          VITE_AUTH0_CLIENT_ID: 'test-client-id',
-          VITE_AUTH0_AUDIENCE: 'test-audience',
-        },
-      },
-    },
-    writable: true,
-    configurable: true,
-  });
+// Extend globalThis with import.meta.env for Jest compatibility
+type ImportMetaEnv = {
+  VITE_API_URL: string;
+  VITE_SEQ_URL: string;
+  VITE_SEQ_API_KEY: string;
+  VITE_NODE_ENV: string;
+  VITE_SENTRY_DSN: string;
+  VITE_AUTH0_DOMAIN: string;
+  VITE_AUTH0_CLIENT_ID: string;
+  VITE_AUTH0_AUDIENCE: string;
+};
+
+type ImportMeta = {
+  env: ImportMetaEnv;
+};
+
+declare global {
+  // Augment globalThis to include the importMeta property
+  // eslint-disable-next-line no-var
+  var importMeta: { meta: ImportMeta };
+  interface GlobalThis {
+    importMeta: { meta: ImportMeta };
+  }
 }
+
+globalThis.importMeta = {
+  meta: {
+    env: {
+      VITE_API_URL: 'http://localhost:5000',
+      VITE_SEQ_URL: 'http://localhost:5341',
+      VITE_SEQ_API_KEY: 'test-api-key',
+      VITE_NODE_ENV: 'test',
+      VITE_SENTRY_DSN: 'test-sentry-dsn',
+      VITE_AUTH0_DOMAIN: 'test.auth0.com',
+      VITE_AUTH0_CLIENT_ID: 'test-client-id',
+      VITE_AUTH0_AUDIENCE: 'test-audience',
+    },
+  },
+};
 
 // Mock window.matchMedia
 Object.defineProperty(window, 'matchMedia', {

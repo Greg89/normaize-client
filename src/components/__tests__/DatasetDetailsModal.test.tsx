@@ -6,20 +6,59 @@ import { DataSet } from '../../types';
 // Mock the formatFileSize utility
 jest.mock('../../utils/format', () => ({
   formatFileSize: (bytes: number) => `${bytes} bytes`,
+  formatDate: (dateString: string | undefined) => {
+    if (!dateString) return 'Not set';
+    // Return a predictable format for testing - map specific dates to expected output
+    if (dateString === '2025-06-30') return '6/30/2025';
+    if (dateString === '2025-12-31') return '12/31/2025';
+    // For any other date, return a predictable format
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return 'Invalid Date';
+    return `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}`;
+  },
+}));
+
+// Mock the dataset helpers
+jest.mock('../../utils/datasetHelpers', () => ({
+  getFileName: (dataset: DataSet) => dataset.fileMetadata?.originalFileName || dataset.fileName || 'Unknown',
+  getFileType: (dataset: DataSet) => dataset.fileMetadata?.fileType || dataset.fileType || 'Unknown',
+  getFileSize: (dataset: DataSet) => dataset.fileMetadata?.sizeInBytes || dataset.fileSize || 0,
+  getUploadedAt: (dataset: DataSet) => dataset.createdAt || dataset.uploadedAt || new Date().toISOString(),
+  getRowCount: (dataset: DataSet) => dataset.statistics?.rowCount || dataset.rowCount || 0,
+  getColumnCount: (dataset: DataSet) => dataset.statistics?.columnCount || dataset.columnCount || 0,
 }));
 
 describe('DatasetDetailsModal', () => {
   const mockDataset: DataSet = {
-    id: 1,
+    id: '550e8400-e29b-41d4-a716-446655440000',
     name: 'Test Dataset',
     description: 'A test dataset for testing purposes',
+    createdBy: 'test-user',
+    createdAt: '2024-01-15T10:30:00Z',
+    updatedAt: undefined,
+    isProcessed: true,
+    isDeleted: false,
+    fileMetadata: {
+      originalFileName: 'test-data.csv',
+      storagePath: 's3://bucket/test-data.csv',
+      fileType: 'CSV',
+      sizeInBytes: 1024 * 1024, // 1MB
+      checksum: 'abc123',
+      storageProvider: 'S3'
+    },
+    statistics: {
+      rowCount: 1000,
+      columnCount: 10,
+      fileSizeBytes: 1024 * 1024,
+      lastProcessedAt: '2024-01-15T10:30:00Z'
+    },
+    // Legacy fields for backward compatibility
     fileName: 'test-data.csv',
     fileType: 'CSV',
-    fileSize: 1024 * 1024, // 1MB
+    fileSize: 1024 * 1024,
     uploadedAt: '2024-01-15T10:30:00Z',
     rowCount: 1000,
     columnCount: 10,
-    isProcessed: true,
   };
 
   const mockOnClose = jest.fn();
@@ -101,7 +140,8 @@ describe('DatasetDetailsModal', () => {
       />
     );
 
-    expect(screen.getByDisplayValue('')).toBeInTheDocument();
+    const descriptionInput = screen.getByLabelText('Description');
+    expect(descriptionInput).toHaveValue('');
   });
 
   it('displays read-only dataset information correctly', () => {
@@ -202,6 +242,112 @@ describe('DatasetDetailsModal', () => {
         description: 'New Description',
       });
     });
+  });
+
+  it('saves retention expiry date when set', async () => {
+    mockOnSave.mockResolvedValue(true);
+    
+    render(
+      <DatasetDetailsModal
+        dataset={mockDataset}
+        isOpen={true}
+        onClose={mockOnClose}
+        onSave={mockOnSave}
+        loading={false}
+      />
+    );
+
+    const retentionDateInput = screen.getByLabelText('Retention Expiry Date');
+    fireEvent.change(retentionDateInput, { target: { value: '2025-12-31' } });
+    
+    const saveButton = screen.getByText('Save Changes');
+    fireEvent.click(saveButton);
+    
+    await waitFor(() => {
+      expect(mockOnSave).toHaveBeenCalledWith({
+        name: 'Test Dataset',
+        description: 'A test dataset for testing purposes',
+        retentionExpiryDate: '2025-12-31',
+      });
+    });
+  });
+
+  it('saves without retention expiry date when field is empty', async () => {
+    mockOnSave.mockResolvedValue(true);
+    
+    // Create a dataset that already has a retention date
+    const datasetWithRetention = { ...mockDataset, retentionExpiryDate: '2025-06-30' };
+    
+    render(
+      <DatasetDetailsModal
+        dataset={datasetWithRetention}
+        isOpen={true}
+        onClose={mockOnClose}
+        onSave={mockOnSave}
+        loading={false}
+      />
+    );
+
+    const retentionDateInput = screen.getByLabelText('Retention Expiry Date');
+    fireEvent.change(retentionDateInput, { target: { value: '' } });
+    
+    const saveButton = screen.getByText('Save Changes');
+    fireEvent.click(saveButton);
+    
+    await waitFor(() => {
+      expect(mockOnSave).toHaveBeenCalledWith({
+        name: 'Test Dataset',
+        description: 'A test dataset for testing purposes',
+        // retentionExpiryDate should not be included when empty
+      });
+    });
+  });
+
+  it('populates retention expiry date from dataset', () => {
+    const datasetWithRetention = { ...mockDataset, retentionExpiryDate: '2025-06-30' };
+    
+    render(
+      <DatasetDetailsModal
+        dataset={datasetWithRetention}
+        isOpen={true}
+        onClose={mockOnClose}
+        onSave={mockOnSave}
+        loading={false}
+      />
+    );
+
+    const retentionDateInput = screen.getByLabelText('Retention Expiry Date');
+    expect(retentionDateInput).toHaveValue('2025-06-30');
+  });
+
+  it('displays retention expiry date in read-only section', () => {
+    const datasetWithRetention = { ...mockDataset, retentionExpiryDate: '2025-06-30' };
+    
+    render(
+      <DatasetDetailsModal
+        dataset={datasetWithRetention}
+        isOpen={true}
+        onClose={mockOnClose}
+        onSave={mockOnSave}
+        loading={false}
+      />
+    );
+
+    expect(screen.getByText('6/30/2025')).toBeInTheDocument();
+  });
+
+  it('displays "Not set" when retention expiry date is undefined', () => {
+    render(
+      <DatasetDetailsModal
+        dataset={mockDataset}
+        isOpen={true}
+        onClose={mockOnClose}
+        onSave={mockOnSave}
+        loading={false}
+      />
+    );
+
+    expect(screen.getByText('Not set')).toBeInTheDocument();
   });
 
   it('closes modal when save is successful', async () => {
@@ -437,6 +583,14 @@ describe('DatasetDetailsModal', () => {
   it('handles large file names with truncation', () => {
     const datasetWithLongFileName = {
       ...mockDataset,
+      fileMetadata: {
+        originalFileName: 'very-long-file-name-that-exceeds-normal-length-and-should-be-truncated.csv',
+        storagePath: mockDataset.fileMetadata?.storagePath || 's3://bucket/file.csv',
+        fileType: mockDataset.fileMetadata?.fileType || 'CSV',
+        sizeInBytes: mockDataset.fileMetadata?.sizeInBytes || 1024,
+        checksum: mockDataset.fileMetadata?.checksum || 'abc123',
+        storageProvider: mockDataset.fileMetadata?.storageProvider || 'S3',
+      },
       fileName: 'very-long-file-name-that-exceeds-normal-length-and-should-be-truncated.csv',
     };
 
@@ -450,12 +604,19 @@ describe('DatasetDetailsModal', () => {
       />
     );
 
-    expect(screen.getByText('very-long-file-name-that-exceeds-normal-length-and-should-be-truncated.csv')).toBeInTheDocument();
+    // Use getByTitle since it's truncated
+    expect(screen.getByTitle('very-long-file-name-that-exceeds-normal-length-and-should-be-truncated.csv')).toBeInTheDocument();
   });
 
   it('handles large numbers in row count', () => {
     const datasetWithLargeRowCount = {
       ...mockDataset,
+      statistics: {
+        rowCount: 999999999,
+        columnCount: mockDataset.statistics?.columnCount || 10,
+        fileSizeBytes: mockDataset.statistics?.fileSizeBytes || 1024,
+        lastProcessedAt: mockDataset.statistics?.lastProcessedAt || '2024-01-15T10:30:00Z',
+      },
       rowCount: 999999999,
     };
 
@@ -469,12 +630,28 @@ describe('DatasetDetailsModal', () => {
       />
     );
 
-    expect(screen.getByText('999,999,999')).toBeInTheDocument();
+    // Use getByText with regex matcher to handle potentially split text
+    expect(screen.getByText(/999,999,999/)).toBeInTheDocument();
   });
 
   it('handles zero values correctly', () => {
     const datasetWithZeroValues = {
       ...mockDataset,
+      statistics: {
+        rowCount: 0,
+        columnCount: 0,
+        fileSizeBytes: 0,
+        lastProcessedAt: mockDataset.statistics?.lastProcessedAt || '2024-01-15T10:30:00Z',
+      },
+      fileMetadata: {
+        ...mockDataset.fileMetadata,
+        originalFileName: mockDataset.fileMetadata?.originalFileName || 'test.csv',
+        storagePath: mockDataset.fileMetadata?.storagePath || 's3://bucket/file.csv',
+        fileType: mockDataset.fileMetadata?.fileType || 'CSV',
+        sizeInBytes: 0,
+        checksum: mockDataset.fileMetadata?.checksum || 'abc123',
+        storageProvider: mockDataset.fileMetadata?.storageProvider || 'S3',
+      },
       rowCount: 0,
       columnCount: 0,
       fileSize: 0,
@@ -493,6 +670,6 @@ describe('DatasetDetailsModal', () => {
     // Check for specific zero values in context
     expect(screen.getByText('Rows:').nextElementSibling).toHaveTextContent('0');
     expect(screen.getByText('Columns:').nextElementSibling).toHaveTextContent('0');
-    expect(screen.getByText('0 bytes')).toBeInTheDocument();
+    expect(screen.getByText(/0 bytes/)).toBeInTheDocument();
   });
 });

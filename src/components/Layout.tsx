@@ -5,6 +5,7 @@ import {
   DocumentTextIcon, 
   ChartBarIcon, 
   ChartPieIcon,
+  CogIcon,
   MagnifyingGlassIcon,
   Cog6ToothIcon
 } from '@heroicons/react/24/outline'
@@ -18,6 +19,7 @@ interface LayoutProps {
 const navigation = [
   { name: 'Dashboard', href: '/', icon: HomeIcon },
   { name: 'Datasets', href: '/datasets', icon: DocumentTextIcon },
+  { name: 'Normalization', href: '/normalization', icon: CogIcon },
   { name: 'Analysis', href: '/analysis', icon: ChartBarIcon },
   { name: 'Visualization', href: '/visualization', icon: ChartPieIcon },
 ]
@@ -84,9 +86,9 @@ export default function Layout({ children }: LayoutProps) {
 
             {/* User Info */}
             <div className="flex items-center space-x-4">
-              {user && (
+              {!!user && (
                 <div className="flex items-center space-x-2">
-                  <span className="text-sm text-gray-700">{user.name || user.email}</span>
+                  <span className="text-sm text-gray-700">{user?.name || user?.email}</span>
                   
                   {/* Settings Dropdown */}
                   <div className="relative" ref={dropdownRef}>

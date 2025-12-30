@@ -10,6 +10,8 @@
 
 A production-ready React application built with Vite, TypeScript, and Tailwind CSS for data analysis and visualization. Features comprehensive error handling, logging, and monitoring capabilities.
 
+This client is designed to work with the Normaize API (see the `normaize-server` workspace folder). The UI expects Auth0 for authentication and consumes the dataset/analysis endpoints exposed by the server.
+
 ## 📊 Status Badges
 
 | Badge | Description | Status |
@@ -67,7 +69,8 @@ A production-ready React application built with Vite, TypeScript, and Tailwind C
    VITE_AUTH0_AUDIENCE=your-api-identifier
    
    # API Configuration
-   VITE_API_URL=http://localhost:5000
+   # Local API (default dev URL for the server)
+   VITE_API_URL=http://localhost:5001
    
    # Optional: Logging and Monitoring
    VITE_SEQ_URL=https://your-seq-instance.railway.app
@@ -79,6 +82,30 @@ A production-ready React application built with Vite, TypeScript, and Tailwind C
    ```bash
    npm run dev
    ```
+
+## ✅ Build & CI Notes
+
+- `npm run build` runs `tsc` in strict mode before bundling with Vite.
+- ESLint is configured to fail CI on unused disables and warnings (`--report-unused-disable-directives --max-warnings 0`).
+
+Common checks:
+
+```bash
+npm run lint
+npm run test --silent
+npm run build
+```
+
+## 🔎 Dataset Preview Behavior
+
+- The UI calls `GET /api/datasets/{id}/preview` and renders a small table preview.
+- The server supports a `rows` query param (default 10, max 100).
+- The preview payload contains `columns` and `rows` (rows are objects/dictionaries keyed by column name). The client parsing is resilient to both camelCase and PascalCase payloads.
+
+## 🗓️ Retention Date Behavior
+
+- Retention is treated as a *date-only* value in the UI.
+- If the API returns an ISO datetime (e.g. `2026-01-01T00:00:00Z`), the UI displays it as `YYYY-MM-DD` (no timezone shifting).
 
 4. **Build for production:**
    ```bash

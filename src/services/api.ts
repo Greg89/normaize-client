@@ -1,10 +1,6 @@
-import { ApiResponse, PaginatedResponse, DataSet, Analysis, DataSetUploadResponse, UserProfileDto, UserSettingsDto } from '../types';
+import { ApiResponse, PaginatedResponse, DataSet, Analysis, DataSetUploadResponse, UserProfileDto, UserSettingsDto, DataSetResetDto, RemoveDuplicateRowsRequest, NormalizationJobResponse } from '../types';
 import { API_CONFIG } from '../utils/constants';
 import { logger } from '../utils/logger';
-
-interface PreviewRow {
-  [key: string]: string | number | boolean | null;
-}
 
 class ApiService {
   private baseUrl: string;
@@ -98,6 +94,18 @@ class ApiService {
 
       // Handle 401 Unauthorized - attempt token refresh first
       if (response.status === 401) {
+        // If we didn't send a token, don't force logout.
+        // This commonly happens when Auth0 token retrieval fails transiently (e.g. "login required")
+        // and aggressively logging out creates a redirect loop.
+        if (!headers['Authorization']) {
+          await logger.warn('401 Unauthorized without token - not forcing re-authentication', {
+            url,
+            method: options.method || 'GET',
+            endpoint,
+          });
+          throw new Error('Authentication required');
+        }
+
         await logger.warn('401 Unauthorized detected, attempting token refresh', {
           url,
           method: options.method || 'GET',
@@ -203,11 +211,12 @@ class ApiService {
               endpoint,
               error: tokenError,
             });
-            
+
+            // We only reach this block when we had an Authorization header to begin with.
             if (this.forceReAuth) {
               await this.forceReAuth();
             }
-            
+
             throw new Error('Authentication required - redirecting to login');
           }
         }
@@ -262,6 +271,9 @@ class ApiService {
   async getDataSets(includeDeleted = false): Promise<DataSet[]> {
     const query = includeDeleted ? '?includeDeleted=true' : '';
     const response = await this.request<DataSet[]>(`/api/datasets${query}`);
+    
+
+    
     return response.data;
   }
 
@@ -302,35 +314,53 @@ class ApiService {
 
     const result = await response.json();
     
-    // Handle the new consistent API response structure
+    // New DDD API returns: { success: true, data: DataSetResponse, message: "..." }
     if (result && typeof result === 'object' && 'data' in result && result.success) {
-      // Server returns { data: { dataSetId: 123, ... }, success: true, message: "..." }
-      const uploadData = result.data;
-      return {
-        id: uploadData.dataSetId || uploadData.id,
-        message: result.message || 'Upload successful',
-        success: result.success
-      };
+      // Return the full DataSetResponse object which includes rich metadata
+      return result.data as DataSetUploadResponse;
     }
     
     // Fallback for unexpected response structure
     throw new Error('Unexpected response structure from server');
   }
 
-  async deleteDataSet(id: number): Promise<void> {
+  async deleteDataSet(id: string): Promise<void> {
     await this.request(`/api/datasets/${id}`, { method: 'DELETE' });
   }
 
-  async updateDataSet(id: number, updates: { name?: string; description?: string }): Promise<DataSet> {
+  async resetDataSet(id: string, resetDto: DataSetResetDto): Promise<DataSet> {
+    const response = await this.request<DataSet>(`/api/datasets/${id}/reset`, {
+      method: 'POST',
+      body: JSON.stringify(resetDto),
+    });
+    
+    return response.data;
+  }
+
+  async updateDataSet(id: string, updates: { name?: string; description?: string; retentionExpiryDate?: string }): Promise<DataSet> { 
     const response = await this.request<DataSet>(`/api/datasets/${id}`, {
       method: 'PUT',
       body: JSON.stringify(updates),
     });
+    
     return response.data;
   }
 
-  async getDataSetPreview(id: number): Promise<PreviewRow[]> {
-    const response = await this.request<PreviewRow[]>(`/api/datasets/${id}/preview`);
+  async getDataSetPreview(id: string): Promise<unknown> {
+    const response = await this.request<unknown>(`/api/datasets/${id}/preview`);
+    return response.data;
+  }
+
+  async removeDuplicates(dataSetId: string, request: RemoveDuplicateRowsRequest): Promise<NormalizationJobResponse> {
+    const response = await this.request<NormalizationJobResponse>(`/api/datasets/${dataSetId}/remove-duplicates`, {
+      method: 'POST',
+      body: JSON.stringify(request),
+    });
+    return response.data;
+  }
+
+  async getJobStatus(jobId: string): Promise<NormalizationJobResponse> {
+    const response = await this.request<NormalizationJobResponse>(`/api/jobs/${jobId}/status`);
     return response.data;
   }
 
@@ -344,7 +374,7 @@ class ApiService {
     name: string;
     description?: string;
     type: string;
-    dataSetId: number;
+    dataSetId: string; // Changed from number to string
     configuration?: unknown;
   }): Promise<Analysis> {
     const response = await this.request<Analysis>('/api/analyses', {
@@ -354,7 +384,7 @@ class ApiService {
     return response.data;
   }
 
-  async getAnalysis(id: number): Promise<Analysis> {
+  async getAnalysis(id: string): Promise<Analysis> { // Changed from number to string
     const response = await this.request<Analysis>(`/api/analyses/${id}`);
     return response.data;
   }
