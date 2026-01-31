@@ -54,6 +54,218 @@ describe('ApiService', () => {
     });
   });
 
+  describe('uploadDataSet', () => {
+    const mockFile = new File(['test content'], 'test.csv', { type: 'text/csv' });
+    
+    beforeEach(() => {
+      mockGetToken.mockResolvedValue('test-token');
+    });
+
+    it('should handle synchronous upload response', async () => {
+      const mockResponse = {
+        success: true,
+        data: {
+          id: '550e8400-e29b-41d4-a716-446655440000',
+          name: 'test-file',
+          description: 'Test description',
+          createdBy: 'user|123',
+          createdAt: '2025-10-31T00:00:00Z',
+          updatedAt: null,
+          isProcessed: true,
+          isDeleted: false,
+          fileMetadata: {
+            originalFileName: 'test.csv',
+            storagePath: 's3://bucket/test.csv',
+            fileType: 'CSV',
+            sizeInBytes: 1024,
+            checksum: 'abc123',
+            storageProvider: 'S3'
+          },
+          statistics: {
+            rowCount: 100,
+            columnCount: 5,
+            fileSizeBytes: 1024,
+            lastProcessedAt: '2025-10-31T00:00:00Z'
+          }
+        },
+        message: 'Dataset uploaded successfully',
+        isAsyncProcessing: false
+      };
+
+      (global.fetch as jest.Mock).mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: jest.fn().mockResolvedValue(mockResponse)
+      });
+
+      const result = await apiService.uploadDataSet(mockFile, 'test-file', 'Test description');
+
+      expect(global.fetch).toHaveBeenCalledWith(
+        'http://localhost:5000/api/datasets/upload',
+        expect.objectContaining({
+          method: 'POST',
+          headers: expect.objectContaining({
+            'Authorization': 'Bearer test-token'
+          }),
+          body: expect.any(FormData)
+        })
+      );
+
+      expect(result).toEqual({
+        ...mockResponse.data,
+        processingJobId: undefined,
+        isAsyncProcessing: false
+      });
+    });
+
+    it('should handle asynchronous upload response with job ID', async () => {
+      const mockResponse = {
+        success: true,
+        data: {
+          id: '550e8400-e29b-41d4-a716-446655440000',
+          name: 'large-file',
+          description: 'Large file test',
+          createdBy: 'user|456',
+          createdAt: '2025-10-31T00:00:00Z',
+          updatedAt: null,
+          isProcessed: false,
+          isDeleted: false,
+          fileMetadata: {
+            originalFileName: 'large-file.csv',
+            storagePath: 's3://bucket/large-file.csv',
+            fileType: 'CSV',
+            sizeInBytes: 10 * 1024 * 1024,
+            checksum: 'def456',
+            storageProvider: 'S3'
+          }
+        },
+        message: 'Dataset uploaded, processing in background',
+        processingJobId: 'job-123-456',
+        isAsyncProcessing: true
+      };
+
+      (global.fetch as jest.Mock).mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: jest.fn().mockResolvedValue(mockResponse)
+      });
+
+      const largeFile = new File([new ArrayBuffer(10 * 1024 * 1024)], 'large-file.csv', { type: 'text/csv' });
+      const result = await apiService.uploadDataSet(largeFile, 'large-file', 'Large file test');
+
+      expect(result).toEqual({
+        ...mockResponse.data,
+        processingJobId: 'job-123-456',
+        isAsyncProcessing: true
+      });
+
+      expect(result.processingJobId).toBe('job-123-456');
+      expect(result.isAsyncProcessing).toBe(true);
+      expect(result.isProcessed).toBe(false);
+    });
+
+    it('should handle upload without description', async () => {
+      const mockResponse = {
+        success: true,
+        data: {
+          id: '550e8400-e29b-41d4-a716-446655440000',
+          name: 'test-file',
+          description: '',
+          createdBy: 'user|123',
+          createdAt: '2025-10-31T00:00:00Z',
+          updatedAt: null,
+          isProcessed: true,
+          isDeleted: false,
+          fileMetadata: {
+            originalFileName: 'test.csv',
+            storagePath: 's3://bucket/test.csv',
+            fileType: 'CSV',
+            sizeInBytes: 512,
+            checksum: 'ghi789',
+            storageProvider: 'S3'
+          }
+        },
+        message: 'Dataset uploaded successfully',
+        isAsyncProcessing: false
+      };
+
+      (global.fetch as jest.Mock).mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: jest.fn().mockResolvedValue(mockResponse)
+      });
+
+      const result = await apiService.uploadDataSet(mockFile, 'test-file');
+
+      expect(result.description).toBe('');
+      expect(result.isAsyncProcessing).toBe(false);
+    });
+
+    it('should throw error when upload fails', async () => {
+      (global.fetch as jest.Mock).mockResolvedValue({
+        ok: false,
+        status: 400,
+        statusText: 'Bad Request'
+      });
+
+      await expect(
+        apiService.uploadDataSet(mockFile, 'test-file', 'Test description')
+      ).rejects.toThrow('Upload failed: Bad Request');
+    });
+
+    it('should throw error when response structure is unexpected', async () => {
+      (global.fetch as jest.Mock).mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: jest.fn().mockResolvedValue({ invalid: 'response' })
+      });
+
+      await expect(
+        apiService.uploadDataSet(mockFile, 'test-file', 'Test description')
+      ).rejects.toThrow('Unexpected response structure from server');
+    });
+
+    it('should include FormData with correct fields', async () => {
+      const mockResponse = {
+        success: true,
+        data: {
+          id: '550e8400-e29b-41d4-a716-446655440000',
+          name: 'test-file',
+          description: 'Test description',
+          createdBy: 'user|123',
+          createdAt: '2025-10-31T00:00:00Z',
+          updatedAt: null,
+          isProcessed: true,
+          isDeleted: false,
+          fileMetadata: {
+            originalFileName: 'test.csv',
+            storagePath: 's3://bucket/test.csv',
+            fileType: 'CSV',
+            sizeInBytes: 1024,
+            checksum: 'abc123',
+            storageProvider: 'S3'
+          }
+        },
+        message: 'Success',
+        isAsyncProcessing: false
+      };
+
+      (global.fetch as jest.Mock).mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: jest.fn().mockResolvedValue(mockResponse)
+      });
+
+      await apiService.uploadDataSet(mockFile, 'test-file', 'Test description');
+
+      const fetchCall = (global.fetch as jest.Mock).mock.calls[0];
+      const formData = fetchCall[1].body as FormData;
+
+      expect(formData).toBeInstanceOf(FormData);
+      // Note: FormData testing is limited in JSDOM, but we verify it was created
+    });
+  });
+
   describe('request method', () => {
     const mockResponse = {
       success: true,
@@ -209,25 +421,29 @@ describe('ApiService', () => {
     });
 
     it('should reject invalid response format', () => {
-      expect(() => apiService['validateResponse'](null as unknown)).toThrow('Invalid response format: response is not an object');
-      expect(() => apiService['validateResponse']('string' as unknown)).toThrow('Invalid response format: response is not an object');
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      expect(() => apiService['validateResponse'](null as any)).toThrow('Invalid response format: response is not an object');
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      expect(() => apiService['validateResponse']('string' as any)).toThrow('Invalid response format: response is not an object');
     });
 
     it('should reject response without success field', () => {
       const invalidResponse = {
         data: { test: 'data' }
       };
-
-      expect(() => apiService['validateResponse'](invalidResponse as unknown)).toThrow('Invalid response format: success field is missing or not boolean');
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      expect(() => apiService['validateResponse'](invalidResponse as any)).toThrow('Invalid response format: success field is missing or not boolean');
     });
 
     it('should reject unsuccessful response with errors', () => {
       const errorResponse = {
         success: false,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        data: {} as any,
         errors: ['Error 1', 'Error 2']
       };
-
-      expect(() => apiService['validateResponse'](errorResponse)).toThrow('API Error: Error 1, Error 2');
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      expect(() => apiService['validateResponse'](errorResponse as any)).toThrow('API Error: Error 1, Error 2');
     });
   });
 
@@ -561,11 +777,13 @@ describe('ApiService', () => {
           })
         })
       );
-      // Result should be the full DataSetResponse object
-      expect(result).toEqual(mockUploadResponse);
+      // Result should be the full DataSetResponse object with async fields
+      expect(result).toMatchObject(mockUploadResponse);
       expect(result.id).toBe('550e8400-e29b-41d4-a716-446655440000');
       expect(result.fileMetadata).toBeDefined();
       expect(result.statistics).toBeDefined();
+      expect(result.processingJobId).toBeUndefined();
+      expect(result.isAsyncProcessing).toBe(false);
     });
 
     it('should handle upload failure', async () => {

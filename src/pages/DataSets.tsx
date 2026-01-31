@@ -48,10 +48,23 @@ export default function DataSets() {
     };
   }, [openDropdown]);
 
-  const handleUploadSuccess = (_datasetId: string, _fileName: string) => {
+  const handleUploadSuccess = (_datasetId: string, _fileName: string, _processingJobId?: string) => {
     // Refresh the datasets list after successful upload
     refetch();
     setShowUpload(false);
+    
+    // Show appropriate message based on processing mode
+    if (_processingJobId) {
+      toast.success('File uploaded! Processing in background. Check the Jobs panel for progress.', {
+        duration: 7000,
+        position: 'top-right',
+      });
+    } else {
+      toast.success('File uploaded and processed successfully!', {
+        duration: 5000,
+        position: 'top-right',
+      });
+    }
   };
 
   const handleUploadError = (error: string) => {

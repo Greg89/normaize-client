@@ -314,10 +314,15 @@ class ApiService {
 
     const result = await response.json();
     
-    // New DDD API returns: { success: true, data: DataSetResponse, message: "..." }
+    // New DDD API returns: { success: true, data: DataSetResponse, message: "...", processingJobId?, isAsyncProcessing? }
     if (result && typeof result === 'object' && 'data' in result && result.success) {
-      // Return the full DataSetResponse object which includes rich metadata
-      return result.data as DataSetUploadResponse;
+      // Return the DataSetResponse with async processing fields if present
+      const uploadResponse: DataSetUploadResponse = {
+        ...result.data,
+        processingJobId: result.processingJobId,
+        isAsyncProcessing: result.isAsyncProcessing || false
+      };
+      return uploadResponse;
     }
     
     // Fallback for unexpected response structure

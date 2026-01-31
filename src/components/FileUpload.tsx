@@ -3,9 +3,10 @@ import { useDropzone } from 'react-dropzone';
 import { Upload, X, CheckCircle, AlertCircle, Loader } from 'lucide-react';
 import { apiService } from '../services/api';
 import { logger } from '../utils/logger';
+import { useJobTracking } from '../hooks/useJobTracking';
 
 interface FileUploadProps {
-  onUploadSuccess: (datasetId: string, fileName: string) => void; // Changed to string
+  onUploadSuccess: (datasetId: string, fileName: string, processingJobId?: string) => void; // Added processingJobId
   onUploadError: (error: string) => void;
   maxFileSize?: number;
   allowedTypes?: string[];
@@ -15,9 +16,10 @@ interface FileUploadProps {
 interface UploadProgress {
   fileName: string;
   progress: number;
-  status: 'uploading' | 'success' | 'error';
+  status: 'uploading' | 'success' | 'processing' | 'error';
   error?: string;
   dataSetId?: string; // Changed to string
+  processingJobId?: string; // Track background processing job
 }
 
 const FileUpload: React.FC<FileUploadProps> = ({
@@ -29,6 +31,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
 }) => {
   const [uploads, setUploads] = useState<UploadProgress[]>([]);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const { createJob } = useJobTracking();
 
   const uploadFile = useCallback(async (file: File, uploadIndex: number) => {
     const formData = new FormData();
@@ -59,16 +62,62 @@ const FileUpload: React.FC<FileUploadProps> = ({
         name: result.name,
         fileMetadata: result.fileMetadata,
         statistics: result.statistics,
-        isProcessed: result.isProcessed
+        isProcessed: result.isProcessed,
+        isAsyncProcessing: result.isAsyncProcessing,
+        processingJobId: result.processingJobId
       });
       
-      setUploads(prev => prev.map((upload, index) => 
-        index === uploadIndex 
-          ? { ...upload, progress: 100, status: 'success', dataSetId: datasetId }
-          : upload
-      ));
-      
-      onUploadSuccess(datasetId, file.name);
+      // Check if file is being processed asynchronously
+      if (result.isAsyncProcessing && result.processingJobId) {
+        // Large file - being processed in background
+        setUploads(prev => prev.map((upload, index) => {
+          if (index === uploadIndex) {
+            const updated: UploadProgress = {
+              fileName: upload.fileName,
+              progress: 100,
+              status: 'processing',
+              dataSetId: datasetId
+            };
+            if (result.processingJobId) {
+              updated.processingJobId = result.processingJobId;
+            }
+            return updated;
+          }
+          return upload;
+        }));
+
+        // Create job tracker for background processing
+        await createJob(
+          {
+            jobId: result.processingJobId,
+            status: 'Queued' as JobTrackerStatus,
+            message: 'Processing file in background...',
+            submittedAt: new Date().toISOString(),
+            progressPercentage: 0,
+            success: true
+          },
+          'PROCESS_FILE',
+          datasetId,
+          result.name,
+          { fileName: file.name }
+        );
+
+        await logger.info('Large file queued for background processing', {
+          datasetId,
+          processingJobId: result.processingJobId
+        });
+
+        onUploadSuccess(datasetId, file.name, result.processingJobId);
+      } else {
+        // Small file - processed immediately
+        setUploads(prev => prev.map((upload, index) => 
+          index === uploadIndex 
+            ? { ...upload, progress: 100, status: 'success', dataSetId: datasetId }
+            : upload
+        ));
+
+        onUploadSuccess(datasetId, file.name);
+      }
     } catch (error) {
       if (error instanceof Error && error.name === 'AbortError') {
         return; // Upload was cancelled
@@ -82,7 +131,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
       
       onUploadError(error instanceof Error ? error.message : 'Upload failed');
     }
-  }, [onUploadSuccess, onUploadError]);
+  }, [onUploadSuccess, onUploadError, createJob]);
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     const newUploads = acceptedFiles.map(file => ({
@@ -193,14 +242,18 @@ const FileUpload: React.FC<FileUploadProps> = ({
                     <p className="font-medium text-gray-900">{upload.fileName}</p>
                     <p className="text-sm text-gray-500">
                       {upload.status === 'uploading' && 'Uploading...'}
-                      {upload.status === 'success' && 'Upload complete'}
-                      {upload.status === 'error' && 'Upload failed'}
+                      {upload.status === 'processing' && '✨ Processing in background...'}
+                      {upload.status === 'success' && '✅ Upload complete'}
+                      {upload.status === 'error' && '❌ Upload failed'}
                     </p>
                   </div>
                 </div>
                 <div className="flex items-center space-x-2">
                   {upload.status === 'uploading' && (
                     <Loader className="h-5 w-5 text-blue-500 animate-spin" />
+                  )}
+                  {upload.status === 'processing' && (
+                    <Loader className="h-5 w-5 text-purple-500 animate-spin" />
                   )}
                   {upload.status === 'success' && (
                     <CheckCircle className="h-5 w-5 text-green-500" />
@@ -230,6 +283,20 @@ const FileUpload: React.FC<FileUploadProps> = ({
               {/* Error Message */}
               {upload.status === 'error' && upload.error && (
                 <p className="text-sm text-red-600 mt-2">{upload.error}</p>
+              )}
+
+              {/* Processing Message */}
+              {upload.status === 'processing' && upload.dataSetId && (
+                <div className="mt-2 p-3 bg-purple-50 border border-purple-200 rounded">
+                  <p className="text-sm text-purple-700">
+                    <strong>Large file detected!</strong> Your file is being processed in the background.
+                    You can track progress in the Jobs panel.
+                  </p>
+                  <p className="text-xs text-purple-600 mt-1">
+                    Dataset ID: {upload.dataSetId}
+                    {upload.processingJobId && ` • Job ID: ${upload.processingJobId}`}
+                  </p>
+                </div>
               )}
 
               {/* Success Message */}

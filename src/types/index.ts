@@ -30,6 +30,9 @@ export interface DataSetUploadResponse {
   retentionExpiryDate?: string; // ISO date string
   fileMetadata?: FileMetadataResponse;
   statistics: DatasetStatisticsResponse;
+  // Async processing fields (when file is processed in background)
+  processingJobId?: string;
+  isAsyncProcessing?: boolean;
 }
 
 // File Metadata Response
@@ -229,7 +232,7 @@ export interface NormalizationJobResponse {
 // Job tracking interface for client-side state management
 export interface JobTracker {
   jobId: string;
-  type: 'REMOVE_DUPLICATES' | 'NORMALIZE_DATA' | 'TRANSFORM_DATA';
+  type: 'REMOVE_DUPLICATES' | 'NORMALIZE_DATA' | 'TRANSFORM_DATA' | 'PROCESS_FILE';
   datasetId: string; // Changed from number to string (GUID)
   datasetName: string;
   status: NormalizationJobStatus;
