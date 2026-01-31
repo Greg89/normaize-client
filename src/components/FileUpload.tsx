@@ -4,6 +4,7 @@ import { Upload, X, CheckCircle, AlertCircle, Loader } from 'lucide-react';
 import { apiService } from '../services/api';
 import { logger } from '../utils/logger';
 import { useJobTracking } from '../hooks/useJobTracking';
+import { NormalizationJobStatus } from '../types';
 
 interface FileUploadProps {
   onUploadSuccess: (datasetId: string, fileName: string, processingJobId?: string) => void; // Added processingJobId
@@ -90,7 +91,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
         await createJob(
           {
             jobId: result.processingJobId,
-            status: 'Queued' as JobTrackerStatus,
+            status: NormalizationJobStatus.QUEUED,
             message: 'Processing file in background...',
             submittedAt: new Date().toISOString(),
             progressPercentage: 0,
