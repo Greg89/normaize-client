@@ -49,8 +49,8 @@ describe('Auth0ProviderWrapper', () => {
     mockLogger.debug = jest.fn();
     
     // Mock Sentry methods
-    (setSentryUser as jest.Mock).mockImplementation(() => {}); // eslint-disable-line @typescript-eslint/no-empty-function
-    (clearSentryUser as jest.Mock).mockImplementation(() => {}); // eslint-disable-line @typescript-eslint/no-empty-function
+    (setSentryUser as jest.Mock).mockImplementation(() => {});
+    (clearSentryUser as jest.Mock).mockImplementation(() => {});
     
     // Mock window.history.replaceState
     Object.defineProperty(window, 'history', {

@@ -26,7 +26,7 @@ global.IntersectionObserver = class IntersectionObserver {
   rootMargin = '';
   thresholds: readonly number[] = [];
   
-  constructor() {} // eslint-disable-line @typescript-eslint/no-empty-function
+  constructor() {}
   observe() { return null; }
   unobserve() { return null; }
   disconnect() { return null; }
@@ -35,7 +35,7 @@ global.IntersectionObserver = class IntersectionObserver {
 
 // Mock ResizeObserver
 global.ResizeObserver = class ResizeObserver {
-  constructor() {} // eslint-disable-line @typescript-eslint/no-empty-function
+  constructor() {}
   observe() { return null; }
   unobserve() { return null; }
   disconnect() { return null; }

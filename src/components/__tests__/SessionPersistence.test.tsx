@@ -218,7 +218,7 @@ describe('SessionPersistence', () => {
   });
 
   it('handles silent authentication errors gracefully', async () => {
-    const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {}); // eslint-disable-line @typescript-eslint/no-empty-function
+    const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
     
     mockUseAuth0.mockReturnValue({
       isAuthenticated: false,

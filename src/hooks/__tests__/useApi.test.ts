@@ -2,7 +2,42 @@ import { renderHook, act, waitFor } from '@testing-library/react';
 import { useApi, useDataSets, useAnalyses, useAnalysis, useDeleteDataSet, useUpdateDataSet, useResetDataSet, useDatasetPreview } from '../useApi';
 import { apiService } from '../../services/api';
 import { ErrorHandler } from '../../utils/errorHandling';
-import { ResetType } from '../../types';
+import { ResetType, DataSet, Analysis } from '../../types';
+
+const TEST_DATASET_ID = '550e8400-e29b-41d4-a716-446655440010';
+const TEST_ANALYSIS_ID = '550e8400-e29b-41d4-a716-446655440001';
+
+const makeDataset = (overrides: Partial<DataSet> = {}): DataSet => {
+  const now = '2026-01-01T00:00:00Z';
+  return {
+    id: TEST_DATASET_ID,
+    name: 'Dataset 1',
+    createdBy: 'test-user',
+    createdAt: now,
+    isProcessed: true,
+    isDeleted: false,
+    statistics: {
+      rowCount: 0,
+      columnCount: 0,
+      fileSizeBytes: 0,
+      lastProcessedAt: now,
+    },
+    ...overrides,
+  };
+};
+
+const makeAnalysis = (overrides: Partial<Analysis> = {}): Analysis => {
+  const now = '2026-01-01T00:00:00Z';
+  return {
+    id: TEST_ANALYSIS_ID,
+    name: 'Analysis 1',
+    type: 'test',
+    status: 'completed',
+    createdAt: now,
+    dataSetId: TEST_DATASET_ID,
+    ...overrides,
+  };
+};
 
 // Mock the API service
 jest.mock('../../services/api', () => ({
@@ -152,7 +187,7 @@ describe('useApi', () => {
 
   describe('useDataSets hook', () => {
     it('should fetch datasets', async () => {
-      const mockDatasets = [{ id: 1, name: 'Dataset 1' }];
+      const mockDatasets = [makeDataset()];
       (apiService.getDataSets as jest.Mock).mockResolvedValue(mockDatasets);
       
       const { result } = renderHook(() => useDataSets());
@@ -166,7 +201,7 @@ describe('useApi', () => {
     });
 
     it('should fetch datasets with includeDeleted parameter', async () => {
-      const mockDatasets = [{ id: 1, name: 'Dataset 1' }];
+      const mockDatasets = [makeDataset()];
       (apiService.getDataSets as jest.Mock).mockResolvedValue(mockDatasets);
       
       const { result } = renderHook(() => useDataSets(true));
@@ -182,7 +217,7 @@ describe('useApi', () => {
 
   describe('useAnalyses hook', () => {
     it('should fetch analyses', async () => {
-      const mockAnalyses = [{ id: 1, name: 'Analysis 1' }];
+      const mockAnalyses = [makeAnalysis()];
       (apiService.getAnalyses as jest.Mock).mockResolvedValue(mockAnalyses);
       
       const { result } = renderHook(() => useAnalyses());
@@ -198,22 +233,22 @@ describe('useApi', () => {
 
   describe('useAnalysis hook', () => {
     it('should fetch analysis by id', async () => {
-      const mockAnalysis = { id: 1, name: 'Analysis 1' };
+      const mockAnalysis = { id: '550e8400-e29b-41d4-a716-446655440001', name: 'Analysis 1' };
       (apiService.getAnalysis as jest.Mock).mockResolvedValue(mockAnalysis);
       
-      const { result } = renderHook(() => useAnalysis(1));
+      const { result } = renderHook(() => useAnalysis('550e8400-e29b-41d4-a716-446655440001'));
       
       await waitFor(() => {
         expect(result.current.loading).toBe(false);
       });
       
       expect(result.current.data).toEqual(mockAnalysis);
-      expect(apiService.getAnalysis).toHaveBeenCalledWith(1);
+      expect(apiService.getAnalysis).toHaveBeenCalledWith('550e8400-e29b-41d4-a716-446655440001');
     });
 
     it('should refetch when id changes', async () => {
-      const mockAnalysis1 = { id: 1, name: 'Analysis 1' };
-      const mockAnalysis2 = { id: 2, name: 'Analysis 2' };
+      const mockAnalysis1 = { id: '550e8400-e29b-41d4-a716-446655440001', name: 'Analysis 1' };
+      const mockAnalysis2 = { id: '550e8400-e29b-41d4-a716-446655440002', name: 'Analysis 2' };
       
       (apiService.getAnalysis as jest.Mock)
         .mockResolvedValueOnce(mockAnalysis1)
@@ -221,7 +256,7 @@ describe('useApi', () => {
       
       const { result, rerender } = renderHook(
         ({ id }) => useAnalysis(id),
-        { initialProps: { id: 1 } }
+        { initialProps: { id: '550e8400-e29b-41d4-a716-446655440001' } }
       );
       
       await waitFor(() => {
@@ -230,7 +265,7 @@ describe('useApi', () => {
       
       expect(result.current.data).toEqual(mockAnalysis1);
       
-      rerender({ id: 2 });
+      rerender({ id: '550e8400-e29b-41d4-a716-446655440002' });
       
       await waitFor(() => {
         expect(result.current.loading).toBe(false);
@@ -251,11 +286,11 @@ describe('useApi', () => {
       expect(result.current.error).toBe(null);
       
       const deleteResult = await act(async () => {
-        return await result.current.deleteDataSet(1);
+        return await result.current.deleteDataSet(TEST_DATASET_ID);
       });
       
       expect(deleteResult).toBe(true);
-      expect(apiService.deleteDataSet).toHaveBeenCalledWith(1);
+      expect(apiService.deleteDataSet).toHaveBeenCalledWith(TEST_DATASET_ID);
     });
 
     it('should handle delete errors', async () => {
@@ -265,7 +300,7 @@ describe('useApi', () => {
       const { result } = renderHook(() => useDeleteDataSet());
       
       const deleteResult = await act(async () => {
-        return await result.current.deleteDataSet(1);
+        return await result.current.deleteDataSet(TEST_DATASET_ID);
       });
       
       expect(deleteResult).toBe(false);
@@ -279,7 +314,7 @@ describe('useApi', () => {
       const { result } = renderHook(() => useDeleteDataSet());
       
       const deleteResult = await act(async () => {
-        return await result.current.deleteDataSet(1);
+        return await result.current.deleteDataSet(TEST_DATASET_ID);
       });
       
       expect(deleteResult).toBe(false);
@@ -289,17 +324,17 @@ describe('useApi', () => {
 
   describe('useUpdateDataSet hook', () => {
     it('should update dataset successfully', async () => {
-      const mockDataset = { id: 1, name: 'Updated Dataset' };
+      const mockDataset = makeDataset({ id: TEST_DATASET_ID, name: 'Updated Dataset' });
       (apiService.updateDataSet as jest.Mock).mockResolvedValue(mockDataset);
       
       const { result } = renderHook(() => useUpdateDataSet());
       
-      const updateResult = await result.current.updateDataSet(1, { name: 'Updated Dataset' });
+      const updateResult = await result.current.updateDataSet(TEST_DATASET_ID, { name: 'Updated Dataset' });
       
       expect(updateResult).toEqual(mockDataset);
       expect(result.current.loading).toBe(false);
       expect(result.current.error).toBe(null);
-      expect(apiService.updateDataSet).toHaveBeenCalledWith(1, { name: 'Updated Dataset' });
+      expect(apiService.updateDataSet).toHaveBeenCalledWith(TEST_DATASET_ID, { name: 'Updated Dataset' });
     });
 
     it('should handle update errors', async () => {
@@ -308,7 +343,7 @@ describe('useApi', () => {
       
       const { result } = renderHook(() => useUpdateDataSet());
       
-      const updateResult = await result.current.updateDataSet(1, { name: 'Updated Dataset' });
+      const updateResult = await result.current.updateDataSet(TEST_DATASET_ID, { name: 'Updated Dataset' });
       
       expect(updateResult).toBe(null);
       await waitFor(() => {
@@ -322,7 +357,7 @@ describe('useApi', () => {
       
       const { result } = renderHook(() => useUpdateDataSet());
       
-      const updateResult = await result.current.updateDataSet(1, { name: 'Updated Dataset' });
+      const updateResult = await result.current.updateDataSet(TEST_DATASET_ID, { name: 'Updated Dataset' });
       
       expect(updateResult).toBe(null);
       await waitFor(() => {
@@ -334,17 +369,17 @@ describe('useApi', () => {
 
   describe('useResetDataSet hook', () => {
     it('should reset dataset successfully', async () => {
-      const mockDataset = { id: 1, name: 'Reset Dataset' };
+      const mockDataset = makeDataset({ id: TEST_DATASET_ID, name: 'Reset Dataset' });
       (apiService.resetDataSet as jest.Mock).mockResolvedValue(mockDataset);
       
       const { result } = renderHook(() => useResetDataSet());
       
-      const resetResult = await result.current.resetDataSet(1, { resetType: ResetType.REPROCESS, reason: 'Test reset' });
+      const resetResult = await result.current.resetDataSet(TEST_DATASET_ID, { resetType: ResetType.REPROCESS, reason: 'Test reset' });
       
       expect(resetResult).toEqual(mockDataset);
       expect(result.current.loading).toBe(false);
       expect(result.current.error).toBe(null);
-      expect(apiService.resetDataSet).toHaveBeenCalledWith(1, { resetType: ResetType.REPROCESS, reason: 'Test reset' });
+      expect(apiService.resetDataSet).toHaveBeenCalledWith(TEST_DATASET_ID, { resetType: ResetType.REPROCESS, reason: 'Test reset' });
     });
 
     it('should handle reset errors', async () => {
@@ -353,7 +388,7 @@ describe('useApi', () => {
       
       const { result } = renderHook(() => useResetDataSet());
       
-      const resetResult = await result.current.resetDataSet(1, { resetType: ResetType.REPROCESS, reason: 'Test reset' });
+      const resetResult = await result.current.resetDataSet(TEST_DATASET_ID, { resetType: ResetType.REPROCESS, reason: 'Test reset' });
       
       expect(resetResult).toBe(null);
       await waitFor(() => {
@@ -367,7 +402,7 @@ describe('useApi', () => {
       
       const { result } = renderHook(() => useResetDataSet());
       
-      const resetResult = await result.current.resetDataSet(1, { resetType: ResetType.REPROCESS, reason: 'Test reset' });
+      const resetResult = await result.current.resetDataSet(TEST_DATASET_ID, { resetType: ResetType.REPROCESS, reason: 'Test reset' });
       
       expect(resetResult).toBe(null);
       await waitFor(() => {
@@ -388,11 +423,11 @@ describe('useApi', () => {
       expect(result.current.error).toBe(null);
       
       const previewResult = await act(async () => {
-        return await result.current.getPreview(1);
+        return await result.current.getPreview(TEST_DATASET_ID);
       });
       
       expect(previewResult).toEqual(mockPreview);
-      expect(apiService.getDataSetPreview).toHaveBeenCalledWith(1);
+      expect(apiService.getDataSetPreview).toHaveBeenCalledWith(TEST_DATASET_ID);
     });
 
     it('should handle preview errors', async () => {
@@ -402,7 +437,7 @@ describe('useApi', () => {
       const { result } = renderHook(() => useDatasetPreview());
       
       const previewResult = await act(async () => {
-        return await result.current.getPreview(1);
+        return await result.current.getPreview(TEST_DATASET_ID);
       });
       
       expect(previewResult).toBe(null);
@@ -416,7 +451,7 @@ describe('useApi', () => {
       const { result } = renderHook(() => useDatasetPreview());
       
       const previewResult = await act(async () => {
-        return await result.current.getPreview(1);
+        return await result.current.getPreview(TEST_DATASET_ID);
       });
       
       expect(previewResult).toBe(null);

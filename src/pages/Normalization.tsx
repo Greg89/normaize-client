@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useRef, useMemo } from 'react';
 import { toast } from 'react-hot-toast';
 import { useDataSets } from '../hooks/useApi';
 import { DataSet } from '../types';
@@ -27,14 +27,12 @@ export default function Normalization() {
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set(['data-cleaning']));
   const workflowRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
+  // Auto-select the first processed dataset if no dataset is selected
+  const defaultDataset = useMemo(() => {
     if (datasets && datasets.length > 0 && !selectedDataset) {
-      // Auto-select the first processed dataset if available
-      const processedDataset = datasets.find(ds => ds.isProcessed && !ds.isDeleted);
-      if (processedDataset) {
-        setSelectedDataset(processedDataset);
-      }
+      return datasets.find(ds => ds.isProcessed && !ds.isDeleted) || null;
     }
+    return null;
   }, [datasets, selectedDataset]);
 
   const handleDatasetSelect = (dataset: DataSet) => {
@@ -360,6 +358,11 @@ export default function Normalization() {
                   <div className="flex items-center space-x-3 mb-2">
                     <DocumentTextIcon className="h-6 w-6 text-gray-500" />
                     <h3 className="text-lg font-medium text-gray-900">{dataset.name}</h3>
+                    {defaultDataset?.id === dataset.id && (
+                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                        Default
+                      </span>
+                    )}
                     {dataset.isProcessed && (
                       <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
                         Ready for Normalization

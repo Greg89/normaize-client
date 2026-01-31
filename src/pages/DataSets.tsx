@@ -16,20 +16,13 @@ export default function DataSets() {
   const { deleteDataSet, loading: deleteLoading } = useDeleteDataSet();
   const { updateDataSet, loading: updateLoading } = useUpdateDataSet();
   const { resetDataSet, loading: resetLoading } = useResetDataSet();
-  const [showUpload, setShowUpload] = useState(false);
   const [searchParams] = useSearchParams();
+  const [showUpload, setShowUpload] = useState(() => searchParams.get('upload') === 'true');
   const [openDropdown, setOpenDropdown] = useState<string | null>(null); // Changed to string
   const [selectedDataset, setSelectedDataset] = useState<DataSet | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    // Check if we should show upload interface from query parameter
-    if (searchParams.get('upload') === 'true') {
-      setShowUpload(true);
-    }
-  }, [searchParams]);
 
   // Close dropdown when clicking outside
   useEffect(() => {

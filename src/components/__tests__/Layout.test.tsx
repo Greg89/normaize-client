@@ -26,7 +26,10 @@ const LayoutWithRouter = ({ children }: { children: React.ReactNode }) => (
 
 describe('Layout', () => {
   const mockNavigate = jest.fn();
-  const mockLogout = jest.fn();
+  const mockLogout = jest.fn().mockResolvedValue(undefined);
+  const mockLogin = jest.fn().mockResolvedValue(undefined);
+  const mockForceReAuth = jest.fn().mockResolvedValue(undefined);
+  const mockGetToken = jest.fn().mockResolvedValue(null);
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -42,15 +45,18 @@ describe('Layout', () => {
       user: { name: 'Test User', email: 'test@example.com' },
       isAuthenticated: true,
       isLoading: false,
-      loginWithRedirect: jest.fn(),
+      login: mockLogin,
       logout: mockLogout,
+      forceReAuth: mockForceReAuth,
+      getToken: mockGetToken,
+      error: null,
     });
     
     // Mock logger
     mockLogger.info = jest.fn();
     
     // Mock console.error to suppress React warnings
-    jest.spyOn(console, 'error').mockImplementation(() => {}); // eslint-disable-line @typescript-eslint/no-empty-function
+    jest.spyOn(console, 'error').mockImplementation(() => undefined);
   });
 
   afterEach(() => {
@@ -98,8 +104,11 @@ describe('Layout', () => {
       user: { email: 'test@example.com' },
       isAuthenticated: true,
       isLoading: false,
-      loginWithRedirect: jest.fn(),
+      login: mockLogin,
       logout: mockLogout,
+      forceReAuth: mockForceReAuth,
+      getToken: mockGetToken,
+      error: null,
     });
     
     render(<LayoutWithRouter>Test Content</LayoutWithRouter>);

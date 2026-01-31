@@ -16,7 +16,6 @@ type ImportMeta = {
 
 declare global {
   // Augment globalThis to include the importMeta property
-  // eslint-disable-next-line no-var
   var importMeta: { meta: ImportMeta };
   interface GlobalThis {
     importMeta: { meta: ImportMeta };

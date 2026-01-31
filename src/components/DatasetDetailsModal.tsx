@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { DataSet } from '../types';
 import { formatFileSize } from '../utils/format';
 import { getFileName, getFileType, getFileSize, getUploadedAt, getRowCount, getColumnCount } from '../utils/datasetHelpers';
@@ -37,37 +37,46 @@ export default function DatasetDetailsModal({
   onSave,
   loading
 }: DatasetDetailsModalProps) {
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
-  const [tempRetentionDate, setTempRetentionDate] = useState('');
+  if (!isOpen || !dataset) return null;
 
-  useEffect(() => {
-    if (dataset) {
-      setName(dataset.name);
-      setDescription(dataset.description || '');
-      
-      // Convert ISO date string to YYYY-MM-DD format for the date input
-      if (dataset.retentionExpiryDate) {
-        const formattedDate = dataset.retentionExpiryDate.replace(/T.*$/, '');
-        setTempRetentionDate(formattedDate);
-      } else {
-        setTempRetentionDate('');
-      }
+  return (
+    <DatasetDetailsModalInner
+      key={dataset.id}
+      dataset={dataset}
+      onClose={onClose}
+      onSave={onSave}
+      loading={loading}
+    />
+  );
+}
+
+interface DatasetDetailsModalInnerProps {
+  dataset: DataSet;
+  onClose: () => void;
+  onSave: (updates: { name: string; description: string; retentionExpiryDate?: string }) => Promise<boolean>;
+  loading: boolean;
+}
+
+function DatasetDetailsModalInner({ dataset, onClose, onSave, loading }: DatasetDetailsModalInnerProps) {
+  const [name, setName] = useState(dataset.name);
+  const [description, setDescription] = useState(dataset.description || '');
+  const [tempRetentionDate, setTempRetentionDate] = useState(() => {
+    if (dataset.retentionExpiryDate) {
+      return dataset.retentionExpiryDate.replace(/T.*$/, '');
     }
-  }, [dataset]);
+    return '';
+  });
 
   const handleSave = async () => {
-    if (!dataset) return;
-    
     const updates: { name: string; description: string; retentionExpiryDate?: string } = {
       name,
       description,
     };
-    
+
     if (tempRetentionDate.trim() !== '') {
       updates.retentionExpiryDate = tempRetentionDate;
     }
-    
+
     const success = await onSave(updates);
     if (success) {
       onClose();
@@ -75,24 +84,18 @@ export default function DatasetDetailsModal({
   };
 
   const handleCancel = () => {
-    // Reset form to original values
-    if (dataset) {
-      setName(dataset.name);
-      setDescription(dataset.description || '');
-      
-      // Convert ISO date string to YYYY-MM-DD format for the date input
-      if (dataset.retentionExpiryDate) {
-        const formattedDate = dataset.retentionExpiryDate.replace(/T.*$/, '');
-        setTempRetentionDate(formattedDate);
-      } else {
-        setTempRetentionDate('');
-      }
+    setName(dataset.name);
+    setDescription(dataset.description || '');
+
+    if (dataset.retentionExpiryDate) {
+      const formattedDate = dataset.retentionExpiryDate.replace(/T.*$/, '');
+      setTempRetentionDate(formattedDate);
+    } else {
+      setTempRetentionDate('');
     }
+
     onClose();
   };
-
-
-  if (!isOpen || !dataset) return null;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">

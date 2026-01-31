@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { 
   DocumentTextIcon, 
@@ -16,22 +16,12 @@ interface DashboardStats {
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const [stats, setStats] = useState<DashboardStats>({
-    totalDatasets: 0,
-    totalAnalyses: 0,
-    totalVisualizations: 0,
-    recentUploads: 0
-  })
-
-  useEffect(() => {
-    // Fetch dashboard stats from API
-    setStats({
-      totalDatasets: 12,
-      totalAnalyses: 8,
-      totalVisualizations: 15,
-      recentUploads: 3
-    })
-  }, [])
+  const [stats] = useState<DashboardStats>({
+    totalDatasets: 12,
+    totalAnalyses: 8,
+    totalVisualizations: 15,
+    recentUploads: 3
+  });
 
   const handleQuickAction = (action: { name: string; href: string }) => {
     if (action.name === 'Upload Dataset') {

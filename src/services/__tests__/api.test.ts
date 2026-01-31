@@ -1,4 +1,5 @@
 import { apiService } from '../api';
+import type { UserProfileDto, UserSettingsDto } from '../../types';
 
 // Mock the constants to avoid import.meta.env issues
 jest.mock('../../utils/constants', () => ({
@@ -566,11 +567,11 @@ describe('ApiService', () => {
 
   describe('Analysis endpoints', () => {
     const mockAnalysis = {
-      id: 1,
+      id: '550e8400-e29b-41d4-a716-446655440001',
       name: 'Test Analysis',
       description: 'Test Description',
       type: 'classification',
-      dataSetId: 1,
+      dataSetId: '550e8400-e29b-41d4-a716-446655440000',
       configuration: {},
       status: 'pending',
       createdAt: '2023-01-01T00:00:00Z',
@@ -670,15 +671,43 @@ describe('ApiService', () => {
   });
 
   describe('User Profile endpoints', () => {
-    const mockUserProfile = {
-      id: 1,
-      name: 'Test User',
-      email: 'test@example.com',
-      avatar: 'default.png',
-      preferences: {},
-      notifications: {},
+    const mockUserSettings: UserSettingsDto = {
+      id: '550e8400-e29b-41d4-a716-446655440100',
+      userId: 'auth0|123',
+
+      emailNotificationsEnabled: true,
+      pushNotificationsEnabled: false,
+      processingCompleteNotifications: true,
+      errorNotifications: true,
+      weeklyDigestEnabled: false,
+
+      theme: 'light',
+      language: 'en',
+      defaultPageSize: 25,
+      showTutorials: true,
+      compactMode: false,
+
+      autoProcessUploads: true,
+      maxPreviewRows: 100,
+      defaultFileType: 'CSV',
+      enableDataValidation: true,
+      enableSchemaInference: true,
+
+      shareAnalytics: false,
+      allowDataUsageForImprovement: false,
+      showProcessingTime: true,
+
       createdAt: '2023-01-01T00:00:00Z',
-      updatedAt: '2023-01-01T00:00:00Z'
+      updatedAt: '2023-01-01T00:00:00Z',
+    };
+
+    const mockUserProfile: UserProfileDto = {
+      userId: 'auth0|123',
+      email: 'test@example.com',
+      name: 'Test User',
+      picture: 'default.png',
+      emailVerified: true,
+      settings: mockUserSettings,
     };
 
     beforeEach(() => {
@@ -703,13 +732,18 @@ describe('ApiService', () => {
     });
 
     it('should update user profile', async () => {
-      const updates = { name: 'Updated Name', preferences: { theme: 'dark' } };
+      const updates: UserSettingsDto = {
+        ...mockUserSettings,
+        theme: 'dark',
+        displayName: 'Updated Name',
+        updatedAt: '2026-01-01T00:00:00Z',
+      };
       (global.fetch as jest.Mock).mockResolvedValue({
         ok: true,
         status: 200,
         json: jest.fn().mockResolvedValue({
           success: true,
-          data: { ...mockUserProfile, ...updates }
+          data: { ...mockUserProfile, name: 'Updated Name', settings: updates }
         })
       });
 
@@ -723,6 +757,7 @@ describe('ApiService', () => {
         })
       );
       expect(result.name).toBe('Updated Name');
+      expect(result.settings.theme).toBe('dark');
     });
   });
 

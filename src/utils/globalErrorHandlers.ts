@@ -264,7 +264,7 @@ export class GlobalErrorHandler {
       if (navigator.sendBeacon) {
         navigator.sendBeacon('/api/logs', data);
       }
-    } catch (error) {
+    } catch {
       // Ignore errors during unload
     }
   }
