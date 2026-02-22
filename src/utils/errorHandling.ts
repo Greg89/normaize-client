@@ -307,6 +307,15 @@ export class ErrorHandler {
   static resetErrorCount(): void {
     this.errorCount.clear();
   }
+
+  /**
+   * Extracts a user-readable error message from an unknown thrown value.
+   * Returns `error.message` for Error instances, or the provided `fallback` for all other values.
+   */
+  static extractErrorMessage(error: unknown, fallback: string): string {
+    if (error instanceof Error) return error.message;
+    return fallback;
+  }
 }
 
 // Export individual functions for convenience
@@ -318,4 +327,5 @@ export const {
   isRetryableError,
   getRetryDelay,
   resetErrorCount,
+  extractErrorMessage,
 } = ErrorHandler; 

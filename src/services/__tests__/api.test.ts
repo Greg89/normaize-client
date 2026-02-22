@@ -214,6 +214,71 @@ describe('ApiService', () => {
       ).rejects.toThrow('Upload failed: Bad Request');
     });
 
+    it('should use message from JSON error body when available', async () => {
+      (global.fetch as jest.Mock).mockResolvedValue({
+        ok: false,
+        status: 400,
+        statusText: 'Bad Request',
+        json: jest.fn().mockResolvedValue({ message: 'Dataset name already exists' })
+      });
+
+      await expect(
+        apiService.uploadDataSet(mockFile, 'test-file', 'Test description')
+      ).rejects.toThrow('Dataset name already exists');
+    });
+
+    it('should use first entry from JSON errors array when present', async () => {
+      (global.fetch as jest.Mock).mockResolvedValue({
+        ok: false,
+        status: 422,
+        statusText: 'Unprocessable Entity',
+        json: jest.fn().mockResolvedValue({ errors: ['File header is invalid', 'Row count mismatch'] })
+      });
+
+      await expect(
+        apiService.uploadDataSet(mockFile, 'test-file', 'Test description')
+      ).rejects.toThrow('File header is invalid');
+    });
+
+    it('should return friendly message for 413 File Too Large without JSON body', async () => {
+      (global.fetch as jest.Mock).mockResolvedValue({
+        ok: false,
+        status: 413,
+        statusText: 'Request Entity Too Large',
+        json: jest.fn().mockRejectedValue(new SyntaxError('Unexpected end of JSON input'))
+      });
+
+      await expect(
+        apiService.uploadDataSet(mockFile, 'test-file', 'Test description')
+      ).rejects.toThrow('Upload failed: File is too large');
+    });
+
+    it('should return friendly message for 415 Unsupported Media Type without JSON body', async () => {
+      (global.fetch as jest.Mock).mockResolvedValue({
+        ok: false,
+        status: 415,
+        statusText: 'Unsupported Media Type',
+        json: jest.fn().mockRejectedValue(new SyntaxError('Unexpected end of JSON input'))
+      });
+
+      await expect(
+        apiService.uploadDataSet(mockFile, 'test-file', 'Test description')
+      ).rejects.toThrow('Upload failed: Unsupported file type');
+    });
+
+    it('should return friendly message for 422 Validation Error without JSON body', async () => {
+      (global.fetch as jest.Mock).mockResolvedValue({
+        ok: false,
+        status: 422,
+        statusText: 'Unprocessable Entity',
+        json: jest.fn().mockRejectedValue(new SyntaxError('Unexpected end of JSON input'))
+      });
+
+      await expect(
+        apiService.uploadDataSet(mockFile, 'test-file', 'Test description')
+      ).rejects.toThrow('Upload failed: File validation error');
+    });
+
     it('should throw error when response structure is unexpected', async () => {
       (global.fetch as jest.Mock).mockResolvedValue({
         ok: true,

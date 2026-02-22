@@ -271,9 +271,6 @@ class ApiService {
   async getDataSets(includeDeleted = false): Promise<DataSet[]> {
     const query = includeDeleted ? '?includeDeleted=true' : '';
     const response = await this.request<DataSet[]>(`/api/datasets${query}`);
-    
-
-    
     return response.data;
   }
 
@@ -309,7 +306,33 @@ class ApiService {
     });
 
     if (!response.ok) {
-      throw new Error(`Upload failed: ${response.statusText}`);
+      let errorMessage = `Upload failed: ${response.statusText}`;
+
+      // Attempt to read a structured error message from the response body.
+      // If the body isn't JSON (or is empty), fall back to status-code hints.
+      try {
+        const errorBody = await response.json() as Record<string, unknown>;
+        if (typeof errorBody.message === 'string') {
+          errorMessage = errorBody.message;
+        } else if (Array.isArray(errorBody.errors) && errorBody.errors.length > 0) {
+          errorMessage = String(errorBody.errors[0]);
+        }
+      } catch {
+        // Body is not JSON — map common status codes to friendlier messages.
+        switch (response.status) {
+          case 413:
+            errorMessage = 'Upload failed: File is too large';
+            break;
+          case 415:
+            errorMessage = 'Upload failed: Unsupported file type';
+            break;
+          case 422:
+            errorMessage = 'Upload failed: File validation error';
+            break;
+        }
+      }
+
+      throw new Error(errorMessage);
     }
 
     const result = await response.json();

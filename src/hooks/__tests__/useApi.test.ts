@@ -57,6 +57,8 @@ jest.mock('../../utils/errorHandling', () => ({
   ErrorHandler: {
     handle: jest.fn(),
   },
+  extractErrorMessage: (error: unknown, fallback: string) =>
+    error instanceof Error ? error.message : fallback,
 }));
 
 describe('useApi', () => {

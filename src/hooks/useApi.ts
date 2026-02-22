@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { ErrorHandler } from '../utils/errorHandling';
+import { ErrorHandler, extractErrorMessage } from '../utils/errorHandling';
 import { apiService } from '../services/api';
 import { DataSet, DataSetResetDto, RemoveDuplicateRowsRequest } from '../types';
 
@@ -84,13 +84,12 @@ export function useDeleteDataSet() {
     
     try {
       await apiService.deleteDataSet(id);
-      setLoading(false);
       return true;
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to delete dataset';
-      setError(errorMessage);
-      setLoading(false);
+      setError(extractErrorMessage(err, 'Failed to delete dataset'));
       return false;
+    } finally {
+      setLoading(false);
     }
   }, []);
 
@@ -111,14 +110,12 @@ export function useUpdateDataSet() {
     
     try {
       const updatedDataset = await apiService.updateDataSet(id, updates);
-      
-      setLoading(false);
       return updatedDataset;
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to update dataset';
-      setError(errorMessage);
-      setLoading(false);
+      setError(extractErrorMessage(err, 'Failed to update dataset'));
       return null;
+    } finally {
+      setLoading(false);
     }
   }, []);
 
@@ -139,14 +136,12 @@ export function useResetDataSet() {
     
     try {
       const resetDataset = await apiService.resetDataSet(id, resetDto);
-      
-      setLoading(false);
       return resetDataset;
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to reset dataset';
-      setError(errorMessage);
-      setLoading(false);
+      setError(extractErrorMessage(err, 'Failed to reset dataset'));
       return null;
+    } finally {
+      setLoading(false);
     }
   }, []);
 
@@ -167,13 +162,12 @@ export function useDatasetPreview() {
     
     try {
       const data = await apiService.getDataSetPreview(id);
-      setLoading(false);
       return data;
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to load preview data';
-      setError(errorMessage);
-      setLoading(false);
+      setError(extractErrorMessage(err, 'Failed to load preview data'));
       return null;
+    } finally {
+      setLoading(false);
     }
   }, []);
 
@@ -194,13 +188,12 @@ export function useRemoveDuplicates() {
     
     try {
       await apiService.removeDuplicates(dataSetId, request);
-      setLoading(false);
       return true;
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to remove duplicates';
-      setError(errorMessage);
-      setLoading(false);
+      setError(extractErrorMessage(err, 'Failed to remove duplicates'));
       return false;
+    } finally {
+      setLoading(false);
     }
   }, []);
 
