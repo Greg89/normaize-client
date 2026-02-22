@@ -312,10 +312,10 @@ class ApiService {
       // If the body isn't JSON (or is empty), fall back to status-code hints.
       try {
         const errorBody = await response.json() as Record<string, unknown>;
-        if (typeof errorBody.message === 'string') {
-          errorMessage = errorBody.message;
-        } else if (Array.isArray(errorBody.errors) && errorBody.errors.length > 0) {
-          errorMessage = String(errorBody.errors[0]);
+        if (typeof errorBody['message'] === 'string') {
+          errorMessage = errorBody['message'];
+        } else if (Array.isArray(errorBody['errors']) && (errorBody['errors'] as unknown[]).length > 0) {
+          errorMessage = String((errorBody['errors'] as unknown[])[0]);
         }
       } catch {
         // Body is not JSON — map common status codes to friendlier messages.
