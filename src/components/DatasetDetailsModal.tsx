@@ -41,7 +41,7 @@ export default function DatasetDetailsModal({
 
   return (
     <DatasetDetailsModalInner
-      key={dataset.id}
+      key={`${dataset.id}-${dataset.name}-${dataset.description ?? ''}`}
       dataset={dataset}
       onClose={onClose}
       onSave={onSave}
