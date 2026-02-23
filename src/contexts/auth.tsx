@@ -15,7 +15,7 @@ export interface AuthContextValue {
   logout: () => Promise<void>;
   forceReAuth: () => Promise<void>;
   getToken: () => Promise<string | null>;
-  error: unknown;
+  error: Error | null | undefined;
 }
 
 export const AuthContext = React.createContext<AuthContextValue | null>(null);

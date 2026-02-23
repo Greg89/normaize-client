@@ -209,6 +209,124 @@ describe('useAuth', () => {
     });
   });
 
+  describe('session-expiry detection in getToken', () => {
+    const SESSION_EXPIRY_CODES = [
+      'login_required',
+      'interaction_required',
+      'consent_required',
+      'missing_refresh_token',
+    ];
+
+    SESSION_EXPIRY_CODES.forEach((code) => {
+      it(`should call forceReAuth and return null when Auth0 throws ${code}`, async () => {
+        const mockError = Object.assign(new Error(`Auth0 error: ${code}`), { error: code });
+        const mockGetAccessTokenSilently = jest.fn().mockRejectedValue(mockError);
+        const mockLogout = jest.fn();
+        mockUseAuth0.mockReturnValue({
+          isAuthenticated: false,
+          isLoading: false,
+          user: null,
+          loginWithRedirect: jest.fn(),
+          logout: mockLogout,
+          getAccessTokenSilently: mockGetAccessTokenSilently,
+          error: null,
+        });
+
+        const { result } = renderHook(() => useAuth(), { wrapper });
+
+        const token = await act(async () => {
+          return await result.current.getToken();
+        });
+
+        expect(token).toBe(null);
+        expect(mockLogout).toHaveBeenCalledTimes(1);
+        expect(logger.warn).toHaveBeenCalledWith(
+          'Auth0 session expired, forcing re-authentication',
+          { errorCode: code }
+        );
+        expect(logger.error).not.toHaveBeenCalled();
+      });
+    });
+
+    it('should NOT call forceReAuth for generic token retrieval errors', async () => {
+      const mockError = new Error('Network timeout');
+      const mockGetAccessTokenSilently = jest.fn().mockRejectedValue(mockError);
+      const mockLogout = jest.fn();
+      mockUseAuth0.mockReturnValue({
+        isAuthenticated: false,
+        isLoading: false,
+        user: null,
+        loginWithRedirect: jest.fn(),
+        logout: mockLogout,
+        getAccessTokenSilently: mockGetAccessTokenSilently,
+        error: null,
+      });
+
+      const { result } = renderHook(() => useAuth(), { wrapper });
+
+      const token = await act(async () => {
+        return await result.current.getToken();
+      });
+
+      expect(token).toBe(null);
+      expect(mockLogout).not.toHaveBeenCalled();
+      expect(logger.error).toHaveBeenCalledWith('Failed to get access token', { error: mockError });
+    });
+  });
+
+  describe('forceReAuth deduplication', () => {
+    it('should call logout once when forceReAuth is called concurrently', async () => {
+      const mockLogout = jest.fn();
+      mockUseAuth0.mockReturnValue({
+        isAuthenticated: false,
+        isLoading: false,
+        user: null,
+        loginWithRedirect: jest.fn(),
+        logout: mockLogout,
+        getAccessTokenSilently: jest.fn(),
+        error: null,
+      });
+
+      const { result } = renderHook(() => useAuth(), { wrapper });
+
+      await act(async () => {
+        await Promise.all([
+          result.current.forceReAuth(),
+          result.current.forceReAuth(),
+          result.current.forceReAuth(),
+        ]);
+      });
+
+      expect(mockLogout).toHaveBeenCalledTimes(1);
+      expect(logger.info).toHaveBeenCalledWith('Force re-authentication already in progress, skipping duplicate call');
+    });
+
+    it('should call logout on the first forceReAuth call', async () => {
+      const mockLogout = jest.fn();
+      mockUseAuth0.mockReturnValue({
+        isAuthenticated: false,
+        isLoading: false,
+        user: null,
+        loginWithRedirect: jest.fn(),
+        logout: mockLogout,
+        getAccessTokenSilently: jest.fn(),
+        error: null,
+      });
+
+      const { result } = renderHook(() => useAuth(), { wrapper });
+
+      await act(async () => {
+        await result.current.forceReAuth();
+      });
+
+      expect(mockLogout).toHaveBeenCalledTimes(1);
+      expect(mockLogout).toHaveBeenCalledWith({
+        logoutParams: { returnTo: window.location.origin },
+      });
+      expect(logger.info).toHaveBeenCalledWith('Forcing re-authentication due to 401 error');
+    });
+  });
+
   describe('error handling', () => {
     it('should log authentication errors when they occur', () => {
       const mockError = {

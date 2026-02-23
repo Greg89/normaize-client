@@ -1,5 +1,5 @@
 import { useAuth0 } from '@auth0/auth0-react';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AuthContext, type AuthContextValue, type AuthUser } from '../contexts/auth';
 import { logger } from '../utils/logger';
 
@@ -95,7 +95,15 @@ const Auth0AuthStateProvider: React.FC<{ children: React.ReactNode }> = ({ child
     });
   }, [logout]);
 
+  // Guard against multiple simultaneous API failures all calling forceReAuth at once.
+  const isForceReAuthInProgress = useRef(false);
+
   const forceReAuth = useCallback(async () => {
+    if (isForceReAuthInProgress.current) {
+      logger.info('Force re-authentication already in progress, skipping duplicate call');
+      return;
+    }
+    isForceReAuthInProgress.current = true;
     logger.info('Forcing re-authentication due to 401 error');
     logout({
       logoutParams: {
@@ -103,6 +111,10 @@ const Auth0AuthStateProvider: React.FC<{ children: React.ReactNode }> = ({ child
       },
     });
   }, [logout]);
+
+  // OAuth error codes that mean the user's session is gone and they must log in again.
+  // Detecting these early avoids a wasted network round-trip (no-auth request → 401).
+  const SESSION_EXPIRY_CODES = ['login_required', 'interaction_required', 'consent_required', 'missing_refresh_token'];
 
   const getToken = useCallback(async () => {
     try {
@@ -113,10 +125,21 @@ const Auth0AuthStateProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
       return token;
     } catch (error) {
+      // Auth0 OAuth errors expose the OAuth error code via an `error` property.
+      const oauthCode = (error instanceof Error && 'error' in error)
+        ? (error as Error & { error?: string }).error
+        : undefined;
+
+      if (oauthCode && SESSION_EXPIRY_CODES.includes(oauthCode)) {
+        logger.warn('Auth0 session expired, forcing re-authentication', { errorCode: oauthCode });
+        await forceReAuth();
+        return null;
+      }
+
       logger.error('Failed to get access token', { error });
       return null;
     }
-  }, [getAccessTokenSilently]);
+  }, [getAccessTokenSilently, forceReAuth]);
 
   useEffect(() => {
     if (error) {
@@ -136,7 +159,7 @@ const Auth0AuthStateProvider: React.FC<{ children: React.ReactNode }> = ({ child
       logout: logoutUser,
       forceReAuth,
       getToken,
-      error,
+      error: error as Error | null | undefined,
     }),
     [error, forceReAuth, getToken, isAuthenticated, isLoading, login, logoutUser, user]
   );
