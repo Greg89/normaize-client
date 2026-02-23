@@ -10,6 +10,35 @@ jest.mock('react-router-dom', () => ({
   useNavigate: () => mockNavigate,
 }));
 
+// Mock useApi hooks — Dashboard now derives stats from real API data
+const mockUseDataSets = jest.fn();
+const mockUseAnalyses = jest.fn();
+jest.mock('../../hooks/useApi', () => ({
+  useDataSets: () => mockUseDataSets(),
+  useAnalyses: () => mockUseAnalyses(),
+}));
+
+// Build 12 mock datasets: 3 uploaded today (recent), 9 with old dates
+const recentDate = new Date().toISOString();
+const oldDate = '2020-01-01T00:00:00Z';
+const mockDatasets = [
+  ...Array.from({ length: 3 }, (_, i) => ({
+    id: i + 1,
+    name: `Recent Dataset ${i + 1}`,
+    uploadedAt: recentDate,
+    isDeleted: false,
+    isProcessed: true,
+  })),
+  ...Array.from({ length: 9 }, (_, i) => ({
+    id: i + 4,
+    name: `Old Dataset ${i + 4}`,
+    uploadedAt: oldDate,
+    isDeleted: false,
+    isProcessed: true,
+  })),
+];
+const mockAnalyses = Array.from({ length: 8 }, (_, i) => ({ id: i + 1, name: `Analysis ${i + 1}` }));
+
 // Mock Heroicons
 jest.mock('@heroicons/react/24/outline', () => ({
   DocumentTextIcon: ({ className, ...props }: { className?: string; [key: string]: unknown }) => (
@@ -37,6 +66,18 @@ const renderWithRouter = (component: React.ReactElement) => {
 describe('Dashboard', () => {
   beforeEach(() => {
     mockNavigate.mockClear();
+    mockUseDataSets.mockReturnValue({
+      data: mockDatasets,
+      loading: false,
+      error: null,
+      refetch: jest.fn(),
+    });
+    mockUseAnalyses.mockReturnValue({
+      data: mockAnalyses,
+      loading: false,
+      error: null,
+      refetch: jest.fn(),
+    });
   });
 
   it('renders without crashing', () => {
@@ -63,11 +104,11 @@ describe('Dashboard', () => {
     expect(screen.getByText('Visualizations')).toBeInTheDocument();
     expect(screen.getByText('Recent Uploads')).toBeInTheDocument();
     
-    // Check stat values
-    expect(screen.getByText('12')).toBeInTheDocument(); // totalDatasets
-    expect(screen.getByText('8')).toBeInTheDocument();  // totalAnalyses
-    expect(screen.getByText('15')).toBeInTheDocument(); // totalVisualizations
-    expect(screen.getByText('3')).toBeInTheDocument();  // recentUploads
+    // Check stat values derived from mock API data
+    expect(screen.getByText('12')).toBeInTheDocument(); // totalDatasets (12 mock datasets)
+    expect(screen.getByText('8')).toBeInTheDocument();  // totalAnalyses (8 mock analyses)
+    expect(screen.getByText('0')).toBeInTheDocument();  // totalVisualizations (no API yet)
+    expect(screen.getByText('3')).toBeInTheDocument();  // recentUploads (3 datasets with today's date)
   });
 
   it('displays stat cards with correct icons and styling', () => {

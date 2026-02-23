@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { 
   DocumentTextIcon, 
@@ -6,22 +5,24 @@ import {
   ChartPieIcon,
   ArrowUpIcon 
 } from '@heroicons/react/24/outline'
-
-interface DashboardStats {
-  totalDatasets: number
-  totalAnalyses: number
-  totalVisualizations: number
-  recentUploads: number
-}
+import { useDataSets, useAnalyses } from '../hooks/useApi'
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const [stats] = useState<DashboardStats>({
-    totalDatasets: 12,
-    totalAnalyses: 8,
-    totalVisualizations: 15,
-    recentUploads: 3
-  });
+  const { data: datasets } = useDataSets(false);
+  const { data: analyses } = useAnalyses();
+
+  const sevenDaysAgo = new Date();
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+  const stats = {
+    totalDatasets: datasets?.length ?? 0,
+    totalAnalyses: analyses?.length ?? 0,
+    totalVisualizations: 0, // Placeholder — no Visualizations API yet
+    recentUploads: datasets?.filter(
+      (d) => d.uploadedAt && new Date(d.uploadedAt) >= sevenDaysAgo
+    ).length ?? 0,
+  };
 
   const handleQuickAction = (action: { name: string; href: string }) => {
     if (action.name === 'Upload Dataset') {

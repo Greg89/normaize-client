@@ -72,6 +72,10 @@ const LocalAuthStateProvider: React.FC<{ children: React.ReactNode }> = ({ child
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
+// OAuth error codes that mean the user's session is gone and they must log in again.
+// Detecting these early avoids a wasted network round-trip (no-auth request → 401).
+const SESSION_EXPIRY_CODES = ['login_required', 'interaction_required', 'consent_required', 'missing_refresh_token'];
+
 const Auth0AuthStateProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const {
     isAuthenticated,
@@ -111,10 +115,6 @@ const Auth0AuthStateProvider: React.FC<{ children: React.ReactNode }> = ({ child
       },
     });
   }, [logout]);
-
-  // OAuth error codes that mean the user's session is gone and they must log in again.
-  // Detecting these early avoids a wasted network round-trip (no-auth request → 401).
-  const SESSION_EXPIRY_CODES = ['login_required', 'interaction_required', 'consent_required', 'missing_refresh_token'];
 
   const getToken = useCallback(async () => {
     try {

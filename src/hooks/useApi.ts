@@ -1,205 +1,203 @@
-import { useState, useEffect, useCallback } from 'react';
-import { ErrorHandler, extractErrorMessage } from '../utils/errorHandling';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { extractErrorMessage } from '../utils/errorHandling';
 import { apiService } from '../services/api';
 import { DataSet, DataSetResetDto, RemoveDuplicateRowsRequest } from '../types';
 
-interface UseApiState<T> {
-  data: T | null;
-  loading: boolean;
-  error: string | null;
+// Typed query key factory — used for targeted cache invalidation
+export const QUERY_KEYS = {
+  datasets: (includeDeleted: boolean) => ['datasets', includeDeleted] as const,
+  analyses: () => ['analyses'] as const,
+  analysis: (id: string) => ['analysis', id] as const,
+} as const;
+
+function getErrorMessage(error: unknown, fallback = 'An error occurred'): string | null {
+  if (!error) return null;
+  return extractErrorMessage(error, fallback);
 }
 
-interface UseApiReturn<T> extends UseApiState<T> {
-  refetch: () => Promise<void>;
-  setData: (data: T) => void;
-}
+// ─── Query hooks ────────────────────────────────────────────────────────────
+// All return { data, loading, error, refetch, setData } to match existing
+// page-component and test-mock shapes.
 
-export function useApi<T>(
-  apiCall: () => Promise<T>,
-  dependencies: unknown[] = []
-): UseApiReturn<T> {
-  const [state, setState] = useState<UseApiState<T>>({
-    data: null,
-    loading: true,
-    error: null,
+export function useDataSets(includeDeleted = false) {
+  const queryClient = useQueryClient();
+  const query = useQuery({
+    queryKey: QUERY_KEYS.datasets(includeDeleted),
+    queryFn: () => apiService.getDataSets(includeDeleted),
   });
 
-  const memoizedApiCall = useCallback(apiCall, [apiCall, ...dependencies]);
-
-  const fetchData = useCallback(async () => {
-    setState(prev => ({ ...prev, loading: true, error: null }));
-    
-    try {
-      const data = await memoizedApiCall();
-      setState({ data, loading: false, error: null });
-    } catch (error) {
-      ErrorHandler.handle(error, 'useApi');
-      setState(prev => ({ 
-        ...prev, 
-        loading: false, 
-        error: error instanceof Error ? error.message : 'An error occurred' 
-      }));
-    }
-  }, [memoizedApiCall]);
-
-  const setData = useCallback((data: T) => {
-    setState(prev => ({ ...prev, data }));
-  }, []);
-
-  useEffect(() => {
-    // Only fetch on mount, not on every error
-    fetchData();
-  }, [fetchData]);
-
   return {
-    ...state,
-    refetch: fetchData,
-    setData,
+    data: query.data ?? null,
+    loading: query.isLoading,
+    error: getErrorMessage(query.error),
+    refetch: async () => { await query.refetch(); },
+    setData: (data: DataSet[]) =>
+      queryClient.setQueryData(QUERY_KEYS.datasets(includeDeleted), data),
   };
 }
 
-// Specific hooks for common API calls
-export function useDataSets(includeDeleted = false) {
-  const apiCall = useCallback(() => apiService.getDataSets(includeDeleted), [includeDeleted]);
-  return useApi(apiCall, [includeDeleted]);
-}
-
 export function useAnalyses() {
-  const apiCall = useCallback(() => apiService.getAnalyses(), []);
-  return useApi(apiCall, []);
-}
-
-export function useAnalysis(id: string) { // Changed to string
-  const apiCall = useCallback(() => apiService.getAnalysis(id), [id]);
-  return useApi(apiCall, [id]);
-}
-
-export function useDeleteDataSet() {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const deleteDataSet = useCallback(async (id: string): Promise<boolean> => { // Changed to string
-    setLoading(true);
-    setError(null);
-    
-    try {
-      await apiService.deleteDataSet(id);
-      return true;
-    } catch (err) {
-      setError(extractErrorMessage(err, 'Failed to delete dataset'));
-      return false;
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const queryClient = useQueryClient();
+  const query = useQuery({
+    queryKey: QUERY_KEYS.analyses(),
+    queryFn: () => apiService.getAnalyses(),
+  });
 
   return {
-    deleteDataSet,
-    loading,
-    error,
+    data: query.data ?? null,
+    loading: query.isLoading,
+    error: getErrorMessage(query.error),
+    refetch: async () => { await query.refetch(); },
+    setData: (data: Awaited<ReturnType<typeof apiService.getAnalyses>>) =>
+      queryClient.setQueryData(QUERY_KEYS.analyses(), data),
+  };
+}
+
+export function useAnalysis(id: string) {
+  const queryClient = useQueryClient();
+  const query = useQuery({
+    queryKey: QUERY_KEYS.analysis(id),
+    queryFn: () => apiService.getAnalysis(id),
+    enabled: !!id,
+  });
+
+  return {
+    data: query.data ?? null,
+    loading: query.isLoading,
+    error: getErrorMessage(query.error),
+    refetch: async () => { await query.refetch(); },
+    setData: (data: Awaited<ReturnType<typeof apiService.getAnalysis>>) =>
+      queryClient.setQueryData(QUERY_KEYS.analysis(id), data),
+  };
+}
+
+// ─── Mutation hooks ──────────────────────────────────────────────────────────
+// Each mutation calls invalidateQueries on success so ALL dataset consumers
+// (DataSets, Normalization, Dashboard) automatically see fresh data.
+
+export function useDeleteDataSet() {
+  const queryClient = useQueryClient();
+  const mutation = useMutation({
+    mutationFn: (id: string) => apiService.deleteDataSet(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['datasets'] });
+    },
+  });
+
+  return {
+    deleteDataSet: async (id: string): Promise<boolean> => {
+      try {
+        await mutation.mutateAsync(id);
+        return true;
+      } catch {
+        return false;
+      }
+    },
+    loading: mutation.isPending,
+    error: getErrorMessage(mutation.error, 'Failed to delete dataset'),
   };
 }
 
 export function useUpdateDataSet() {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const updateDataSet = useCallback(async (id: string, updates: { name?: string; description?: string; retentionExpiryDate?: string }): Promise<DataSet | null> => { // Changed to string
-    setLoading(true);
-    setError(null);
-    
-    try {
-      const updatedDataset = await apiService.updateDataSet(id, updates);
-      return updatedDataset;
-    } catch (err) {
-      setError(extractErrorMessage(err, 'Failed to update dataset'));
-      return null;
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const queryClient = useQueryClient();
+  const mutation = useMutation({
+    mutationFn: ({
+      id,
+      updates,
+    }: {
+      id: string;
+      updates: { name?: string; description?: string; retentionExpiryDate?: string };
+    }) => apiService.updateDataSet(id, updates),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['datasets'] });
+    },
+  });
 
   return {
-    updateDataSet,
-    loading,
-    error,
+    updateDataSet: async (
+      id: string,
+      updates: { name?: string; description?: string; retentionExpiryDate?: string }
+    ): Promise<DataSet | null> => {
+      try {
+        return await mutation.mutateAsync({ id, updates });
+      } catch {
+        return null;
+      }
+    },
+    loading: mutation.isPending,
+    error: getErrorMessage(mutation.error, 'Failed to update dataset'),
   };
 }
 
 export function useResetDataSet() {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const resetDataSet = useCallback(async (id: string, resetDto: DataSetResetDto): Promise<DataSet | null> => { // Changed to string
-    setLoading(true);
-    setError(null);
-    
-    try {
-      const resetDataset = await apiService.resetDataSet(id, resetDto);
-      return resetDataset;
-    } catch (err) {
-      setError(extractErrorMessage(err, 'Failed to reset dataset'));
-      return null;
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const queryClient = useQueryClient();
+  const mutation = useMutation({
+    mutationFn: ({ id, resetDto }: { id: string; resetDto: DataSetResetDto }) =>
+      apiService.resetDataSet(id, resetDto),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['datasets'] });
+    },
+  });
 
   return {
-    resetDataSet,
-    loading,
-    error,
+    resetDataSet: async (id: string, resetDto: DataSetResetDto): Promise<DataSet | null> => {
+      try {
+        return await mutation.mutateAsync({ id, resetDto });
+      } catch {
+        return null;
+      }
+    },
+    loading: mutation.isPending,
+    error: getErrorMessage(mutation.error, 'Failed to reset dataset'),
   };
 }
 
 export function useDatasetPreview() {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const getPreview = useCallback(async (id: string): Promise<unknown | null> => {
-    setLoading(true);
-    setError(null);
-    
-    try {
-      const data = await apiService.getDataSetPreview(id);
-      return data;
-    } catch (err) {
-      setError(extractErrorMessage(err, 'Failed to load preview data'));
-      return null;
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const mutation = useMutation({
+    mutationFn: (id: string) => apiService.getDataSetPreview(id),
+  });
 
   return {
-    getPreview,
-    loading,
-    error,
+    getPreview: async (id: string): Promise<unknown | null> => {
+      try {
+        return await mutation.mutateAsync(id);
+      } catch {
+        return null;
+      }
+    },
+    loading: mutation.isPending,
+    error: getErrorMessage(mutation.error, 'Failed to load preview data'),
   };
 }
 
 export function useRemoveDuplicates() {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const removeDuplicates = useCallback(async (dataSetId: string, request: RemoveDuplicateRowsRequest): Promise<boolean> => { // Changed to string
-    setLoading(true);
-    setError(null);
-    
-    try {
-      await apiService.removeDuplicates(dataSetId, request);
-      return true;
-    } catch (err) {
-      setError(extractErrorMessage(err, 'Failed to remove duplicates'));
-      return false;
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const queryClient = useQueryClient();
+  const mutation = useMutation({
+    mutationFn: ({
+      dataSetId,
+      request,
+    }: {
+      dataSetId: string;
+      request: RemoveDuplicateRowsRequest;
+    }) => apiService.removeDuplicates(dataSetId, request),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['datasets'] });
+    },
+  });
 
   return {
-    removeDuplicates,
-    loading,
-    error,
+    removeDuplicates: async (
+      dataSetId: string,
+      request: RemoveDuplicateRowsRequest
+    ): Promise<boolean> => {
+      try {
+        await mutation.mutateAsync({ dataSetId, request });
+        return true;
+      } catch {
+        return false;
+      }
+    },
+    loading: mutation.isPending,
+    error: getErrorMessage(mutation.error, 'Failed to remove duplicates'),
   };
 } 
