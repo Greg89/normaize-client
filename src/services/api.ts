@@ -1,4 +1,14 @@
+import { z } from 'zod';
 import { ApiResponse, PaginatedResponse, DataSet, Analysis, DataSetUploadResponse, UserProfileDto, UserSettingsDto, DataSetResetDto, RemoveDuplicateRowsRequest, NormalizationJobResponse } from '../types';
+import {
+  DataSetSchema,
+  DataSetArraySchema,
+  DataSetUploadResponseSchema,
+  AnalysisSchema,
+  AnalysisArraySchema,
+  NormalizationJobResponseSchema,
+  UserProfileSchema,
+} from '../types/schemas';
 import { API_CONFIG } from '../utils/constants';
 import { logger } from '../utils/logger';
 
@@ -18,6 +28,36 @@ class ApiService {
 
   setForceReAuth(forceReAuth: () => Promise<void>) {
     this.forceReAuth = forceReAuth;
+  }
+
+  /**
+   * Validates a raw API payload against a Zod schema.
+   *
+   * Behaviour is environment-dependent:
+   *   - development / test  → throws on mismatch (surfaces contract drift early)
+   *   - production          → logs a structured warning and returns raw data
+   *                           (graceful degradation: users are never blocked)
+   *
+   * On a successful parse the Zod-coerced output is always returned so enum
+   * narrowing, nullable defaults, etc. are applied in all environments.
+   */
+  private validateData<T>(schema: z.ZodTypeAny, data: unknown, context: string): T {
+    const result = schema.safeParse(data);
+    if (!result.success) {
+      const issues = result.error.issues.map(
+        (i: z.ZodIssue) => `${i.path.join('.')}: ${i.message}`
+      );
+      if (process.env['NODE_ENV'] !== 'production') {
+        // In development/test: throw so contract drift is caught immediately
+        throw new Error(
+          `API response validation failed [${context}]:\n  ${issues.join('\n  ')}`
+        );
+      }
+      // In production: warn and fall back to raw data — never crash the UI
+      logger.warn(`API response validation warning [${context}]`, { issues });
+      return data as T;
+    }
+    return result.data as T;
   }
 
   /**
@@ -271,7 +311,7 @@ class ApiService {
   async getDataSets(includeDeleted = false): Promise<DataSet[]> {
     const query = includeDeleted ? '?includeDeleted=true' : '';
     const response = await this.request<DataSet[]>(`/api/datasets${query}`);
-    return response.data;
+    return this.validateData(DataSetArraySchema, response.data, 'getDataSets');
   }
 
   async getDataSetsPaginated(page = 1, pageSize = 10, includeDeleted = false): Promise<PaginatedResponse<DataSet>> {
@@ -345,7 +385,7 @@ class ApiService {
         processingJobId: result.processingJobId,
         isAsyncProcessing: result.isAsyncProcessing || false
       };
-      return uploadResponse;
+      return this.validateData(DataSetUploadResponseSchema, uploadResponse, 'uploadDataSet');
     }
     
     // Fallback for unexpected response structure
@@ -361,17 +401,15 @@ class ApiService {
       method: 'POST',
       body: JSON.stringify(resetDto),
     });
-    
-    return response.data;
+    return this.validateData(DataSetSchema, response.data, 'resetDataSet');
   }
 
-  async updateDataSet(id: string, updates: { name?: string; description?: string; retentionExpiryDate?: string }): Promise<DataSet> { 
+  async updateDataSet(id: string, updates: { name?: string; description?: string; retentionExpiryDate?: string }): Promise<DataSet> {
     const response = await this.request<DataSet>(`/api/datasets/${id}`, {
       method: 'PUT',
       body: JSON.stringify(updates),
     });
-    
-    return response.data;
+    return this.validateData(DataSetSchema, response.data, 'updateDataSet');
   }
 
   async getDataSetPreview(id: string): Promise<unknown> {
@@ -384,18 +422,18 @@ class ApiService {
       method: 'POST',
       body: JSON.stringify(request),
     });
-    return response.data;
+    return this.validateData(NormalizationJobResponseSchema, response.data, 'removeDuplicates');
   }
 
   async getJobStatus(jobId: string): Promise<NormalizationJobResponse> {
     const response = await this.request<NormalizationJobResponse>(`/api/jobs/${jobId}/status`);
-    return response.data;
+    return this.validateData(NormalizationJobResponseSchema, response.data, 'getJobStatus');
   }
 
   // Analysis endpoints
   async getAnalyses(): Promise<Analysis[]> {
     const response = await this.request<Analysis[]>('/api/analyses');
-    return response.data;
+    return this.validateData(AnalysisArraySchema, response.data, 'getAnalyses');
   }
 
   async createAnalysis(data: {
@@ -409,12 +447,12 @@ class ApiService {
       method: 'POST',
       body: JSON.stringify(data),
     });
-    return response.data;
+    return this.validateData(AnalysisSchema, response.data, 'createAnalysis');
   }
 
   async getAnalysis(id: string): Promise<Analysis> { // Changed from number to string
     const response = await this.request<Analysis>(`/api/analyses/${id}`);
-    return response.data;
+    return this.validateData(AnalysisSchema, response.data, 'getAnalysis');
   }
 
   // Health check
@@ -426,7 +464,7 @@ class ApiService {
   // User Profile endpoints
   async getUserProfile(): Promise<UserProfileDto> {
     const response = await this.request<UserProfileDto>('/api/UserSettings/profile');
-    return response.data;
+    return this.validateData(UserProfileSchema, response.data, 'getUserProfile');
   }
 
   async updateUserProfile(data: UserSettingsDto): Promise<UserProfileDto> {
@@ -434,7 +472,7 @@ class ApiService {
       method: 'PUT',
       body: JSON.stringify(data),
     });
-    return response.data;
+    return this.validateData(UserProfileSchema, response.data, 'updateUserProfile');
   }
 }
 

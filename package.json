@@ -47,7 +47,8 @@
     "react-dom": "^18.2.0",
     "react-dropzone": "^14.2.3",
     "react-hot-toast": "^2.4.0",
-    "react-router-dom": "^6.8.1"
+    "react-router-dom": "^6.8.1",
+    "zod": "^3.25.76"
   },
   "devDependencies": {
     "@testing-library/dom": "^10.4.1",

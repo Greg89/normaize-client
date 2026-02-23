@@ -138,6 +138,12 @@ describe('ApiService', () => {
             sizeInBytes: 10 * 1024 * 1024,
             checksum: 'def456',
             storageProvider: 'S3'
+          },
+          statistics: {
+            rowCount: 0,
+            columnCount: 0,
+            fileSizeBytes: 10 * 1024 * 1024,
+            lastProcessedAt: '2025-10-31T00:00:00Z'
           }
         },
         message: 'Dataset uploaded, processing in background',
@@ -184,6 +190,12 @@ describe('ApiService', () => {
             sizeInBytes: 512,
             checksum: 'ghi789',
             storageProvider: 'S3'
+          },
+          statistics: {
+            rowCount: 10,
+            columnCount: 3,
+            fileSizeBytes: 512,
+            lastProcessedAt: '2025-10-31T00:00:00Z'
           }
         },
         message: 'Dataset uploaded successfully',
@@ -310,6 +322,12 @@ describe('ApiService', () => {
             sizeInBytes: 1024,
             checksum: 'abc123',
             storageProvider: 'S3'
+          },
+          statistics: {
+            rowCount: 100,
+            columnCount: 5,
+            fileSizeBytes: 1024,
+            lastProcessedAt: '2025-10-31T00:00:00Z'
           }
         },
         message: 'Success',
@@ -515,15 +533,24 @@ describe('ApiService', () => {
 
   describe('DataSet endpoints', () => {
     const mockDataSet = {
-      id: 1,
+      id: '550e8400-e29b-41d4-a716-446655440000',
       name: 'Test Dataset',
       description: 'Test Description',
+      createdBy: 'auth0|user123',
+      createdAt: '2023-01-01T00:00:00Z',
+      updatedAt: '2023-01-01T00:00:00Z',
+      isProcessed: true,
+      isDeleted: false,
+      statistics: {
+        rowCount: 100,
+        columnCount: 5,
+        fileSizeBytes: 1024,
+        lastProcessedAt: '2023-01-01T00:00:00Z',
+      },
+      // legacy fields
       fileName: 'test.csv',
       fileSize: 1024,
       rowCount: 100,
-      status: 'processed',
-      createdAt: '2023-01-01T00:00:00Z',
-      updatedAt: '2023-01-01T00:00:00Z'
     };
 
     beforeEach(() => {
