@@ -22,7 +22,8 @@
     "test:e2e:ui": "playwright test --ui",
     "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx,json,css,md}\"",
     "format:check": "prettier --check \"src/**/*.{ts,tsx,js,jsx,json,css,md}\"",
-    "security:audit": "npm audit --audit-level moderate",
+    "security:audit": "npm audit --omit=dev --audit-level moderate",
+    "security:audit:all": "npm audit --audit-level moderate",
     "security:fix": "npm audit fix",
     "bundle:analyze": "npm run build:analyze && npx vite-bundle-analyzer dist",
     "clean": "rimraf dist coverage .nyc_output",
@@ -75,5 +76,8 @@
     "ts-jest": "^29.4.6",
     "typescript": "^4.9.3",
     "vite": "^7.0.2"
+  },
+  "overrides": {
+    "minimatch": ">=10.2.1"
   }
 }
