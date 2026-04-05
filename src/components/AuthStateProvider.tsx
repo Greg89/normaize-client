@@ -8,7 +8,7 @@ interface Auth0Error extends Error {
 }
 
 interface AuthStateProviderProps {
-  children: React.ReactNode;
+  children?: React.ReactNode;
   disableAuth: boolean;
 }
 
