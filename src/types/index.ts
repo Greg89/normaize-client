@@ -138,7 +138,7 @@ export interface DataSet {
   description?: string;
   createdBy: string;
   createdAt: string; // ISO date string
-  updatedAt?: string; // ISO date string
+  updatedAt?: string | null; // ISO date string, null when never updated
   isProcessed: boolean;
   isDeleted?: boolean;
   fileMetadata?: FileMetadataResponse;
