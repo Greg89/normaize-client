@@ -15,7 +15,7 @@ const mockUseDataSets = useApiHook.useDataSets as jest.MockedFunction<typeof use
 // Mock data
 const mockDatasets = [
   {
-    id: 1,
+    id: '550e8400-e29b-41d4-a716-446655440001',
     name: 'Test Dataset 1',
     description: 'A test dataset for normalization',
     fileName: 'test1.csv',
@@ -25,10 +25,18 @@ const mockDatasets = [
     rowCount: 1000,
     columnCount: 10,
     isProcessed: true,
-    isDeleted: false
+    isDeleted: false,
+    createdBy: 'auth0|user123',
+    createdAt: '2023-10-01T10:00:00Z',
+    statistics: {
+      rowCount: 1000,
+      columnCount: 10,
+      fileSizeBytes: 1024000,
+      lastProcessedAt: '2023-10-01T10:00:00Z'
+    }
   },
   {
-    id: 2,
+    id: '550e8400-e29b-41d4-a716-446655440002',
     name: 'Test Dataset 2',
     description: 'Another test dataset',
     fileName: 'test2.csv',
@@ -38,10 +46,18 @@ const mockDatasets = [
     rowCount: 2000,
     columnCount: 15,
     isProcessed: false,
-    isDeleted: false
+    isDeleted: false,
+    createdBy: 'auth0|user123',
+    createdAt: '2023-10-02T10:00:00Z',
+    statistics: {
+      rowCount: 0,
+      columnCount: 0,
+      fileSizeBytes: 2048000,
+      lastProcessedAt: null
+    }
   },
   {
-    id: 3,
+    id: '550e8400-e29b-41d4-a716-446655440003',
     name: 'Deleted Dataset',
     description: 'This dataset is deleted',
     fileName: 'deleted.csv',
@@ -51,7 +67,15 @@ const mockDatasets = [
     rowCount: 500,
     columnCount: 5,
     isProcessed: true,
-    isDeleted: true
+    isDeleted: true,
+    createdBy: 'auth0|user123',
+    createdAt: '2023-09-30T10:00:00Z',
+    statistics: {
+      rowCount: 500,
+      columnCount: 5,
+      fileSizeBytes: 512000,
+      lastProcessedAt: '2023-09-30T10:00:00Z'
+    }
   }
 ];
 

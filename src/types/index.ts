@@ -50,7 +50,7 @@ export interface DatasetStatisticsResponse {
   rowCount: number;
   columnCount: number;
   fileSizeBytes: number;
-  lastProcessedAt: string; // ISO date string
+  lastProcessedAt: string | null; // ISO date string, null when not yet processed
 }
 
 // User Profile Types - matching server DTOs (camelCase for JSON)

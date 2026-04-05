@@ -46,7 +46,7 @@ export const DatasetStatisticsSchema = z.object({
   rowCount: z.number(),
   columnCount: z.number(),
   fileSizeBytes: z.number(),
-  lastProcessedAt: isoDateString,
+  lastProcessedAt: isoDateString.nullable(),
 }).passthrough();
 
 // ---------------------------------------------------------------------------
