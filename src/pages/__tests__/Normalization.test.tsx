@@ -4,6 +4,7 @@ import { BrowserRouter } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import Normalization from '../Normalization';
 import * as useApiHook from '../../hooks/useApi';
+import { useNormalizationStore } from '../../stores/normalizationStore';
 
 // Mock the hooks
 jest.mock('../../hooks/useApi');
@@ -66,6 +67,7 @@ const renderNormalization = () => {
 describe('Normalization', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    useNormalizationStore.getState().reset();
   });
     beforeAll(() => {
       // ...existing code...

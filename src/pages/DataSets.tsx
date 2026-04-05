@@ -6,6 +6,7 @@ import DatasetDetailsModal from '../components/DatasetDetailsModal';
 import DatasetPreviewModal from '../components/DatasetPreviewModal';
 import { useDataSets, useDeleteDataSet, useUpdateDataSet, useResetDataSet } from '../hooks/useApi';
 import { DataSet, ResetType } from '../types';
+import { useDatasetStore } from '../stores';
 import { logger } from '../utils/logger';
 import { formatFileSize } from '../utils/format';
 import { getUploadedAt, getFileSize, getRowCount, getColumnCount } from '../utils/datasetHelpers';
@@ -17,12 +18,31 @@ export default function DataSets() {
   const { updateDataSet, loading: updateLoading } = useUpdateDataSet();
   const { resetDataSet, loading: resetLoading } = useResetDataSet();
   const [searchParams] = useSearchParams();
-  const [showUpload, setShowUpload] = useState(() => searchParams.get('upload') === 'true');
-  const [openDropdown, setOpenDropdown] = useState<string | null>(null); // Changed to string
-  const [selectedDataset, setSelectedDataset] = useState<DataSet | null>(null);
-  const [showDetailsModal, setShowDetailsModal] = useState(false);
-  const [showPreviewModal, setShowPreviewModal] = useState(false);
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Global store — selectedDataset and modal visibility are shared state that
+  // other pages (e.g. Normalization) can read after this page sets them.
+  const {
+    selectedDataset,
+    activeModal,
+    showUploadPanel,
+    openModal,
+    closeModal,
+    selectDataset,
+    setShowUploadPanel,
+  } = useDatasetStore();
+
+  const showDetailsModal = activeModal === 'details';
+  const showPreviewModal = activeModal === 'preview';
+
+  // Sync the ?upload=true URL param into the store on mount / param change.
+  const uploadParam = searchParams.get('upload');
+  useEffect(() => {
+    if (uploadParam === 'true') {
+      setShowUploadPanel(true);
+    }
+  }, [uploadParam, setShowUploadPanel]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -44,7 +64,7 @@ export default function DataSets() {
   const handleUploadSuccess = (_datasetId: string, _fileName: string, _processingJobId?: string) => {
     // Refresh the datasets list after successful upload
     refetch();
-    setShowUpload(false);
+    setShowUploadPanel(false);
     
     // Show appropriate message based on processing mode
     if (_processingJobId) {
@@ -90,15 +110,13 @@ export default function DataSets() {
   };
 
   const handleOpenDetails = (dataset: DataSet) => {
-    setSelectedDataset(dataset);
-    setShowDetailsModal(true);
-    setOpenDropdown(null); // Close dropdown
+    openModal('details', dataset);
+    setOpenDropdown(null);
   };
 
   const handleOpenPreview = (dataset: DataSet) => {
-    setSelectedDataset(dataset);
-    setShowPreviewModal(true);
-    setOpenDropdown(null); // Close dropdown
+    openModal('preview', dataset);
+    setOpenDropdown(null);
   };
 
   const handleUpdateDataset = async (updates: { name: string; description: string; retentionExpiryDate?: string }): Promise<boolean> => {
@@ -110,8 +128,9 @@ export default function DataSets() {
       if (updatedDataset) {
         toast.success(`Dataset "${updates.name}" updated successfully`);
         
-        // Update both selectedDataset and the dataset in the datasets array
-        setSelectedDataset(updatedDataset);
+        // Update the store's selectedDataset without closing the modal
+        // so the details panel immediately reflects the saved changes.
+        selectDataset(updatedDataset);
         
         // Refresh the datasets list to show updated data
         await refetch();
@@ -182,15 +201,9 @@ export default function DataSets() {
     }
   };
 
-  const handleCloseDetails = () => {
-    setShowDetailsModal(false);
-    setSelectedDataset(null);
-  };
+  const handleCloseDetails = () => closeModal();
 
-  const handleClosePreview = () => {
-    setShowPreviewModal(false);
-    setSelectedDataset(null);
-  };
+  const handleClosePreview = () => closeModal();
 
   const toggleDropdown = (datasetId: string) => {
     setOpenDropdown(openDropdown === datasetId ? null : datasetId);
@@ -218,16 +231,16 @@ export default function DataSets() {
             <span className="text-sm text-gray-600">Include deleted</span>
           </div>
           <button
-            onClick={() => setShowUpload(!showUpload)}
+            onClick={() => setShowUploadPanel(!showUploadPanel)}
             className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors"
           >
-            {showUpload ? 'Cancel Upload' : 'Upload Dataset'}
+            {showUploadPanel ? 'Cancel Upload' : 'Upload Dataset'}
           </button>
         </div>
       </div>
 
       {/* Upload Section */}
-      {showUpload && (
+      {showUploadPanel && (
         <div className="card">
           <FileUpload
             onUploadSuccess={handleUploadSuccess}

@@ -2,6 +2,7 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import DataSets from '../DataSets';
+import { useDatasetStore } from '../../stores/datasetStore';
 
 // Mock dependencies
 const mockUseDataSets = jest.fn();
@@ -147,6 +148,7 @@ describe('DataSets', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    useDatasetStore.getState().reset();
     
     // Default mock implementations
     mockUseDataSets.mockReturnValue({

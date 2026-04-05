@@ -1,4 +1,4 @@
-﻿import { useState, useRef } from 'react';
+﻿import { useRef } from 'react';
 import { useDataSets } from '../hooks/useApi';
 import { DataSet } from '../types';
 import { logger } from '../utils/logger';
@@ -6,17 +6,30 @@ import { RemoveDuplicates, ComingSoonTool } from '../components/normalization';
 import NormalizationDatasetSelector from '../components/normalization/NormalizationDatasetSelector';
 import NormalizationToolsSidebar from '../components/normalization/NormalizationToolsSidebar';
 import { BeakerIcon } from '@heroicons/react/24/outline';
+import { useDatasetStore, useNormalizationStore } from '../stores';
 
 export default function Normalization() {
   const { data: datasets, loading, error, refetch } = useDataSets(false);
-  const [selectedDataset, setSelectedDataset] = useState<DataSet | null>(null);
-  const [activeStep, setActiveStep] = useState<'select' | 'workflow'>('select');
-  const [selectedTool, setSelectedTool] = useState<string | null>(null);
-  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set(['data-cleaning']));
   const workflowRef = useRef<HTMLDivElement>(null);
 
+  // Dataset selection is shared with the DataSets page — if the user
+  // selected a dataset there, it is already populated here.
+  const { selectedDataset, selectDataset } = useDatasetStore();
+
+  // Normalization workflow state persists across navigation — navigating
+  // away and back restores the user’s tool selection and step.
+  const {
+    activeStep,
+    selectedTool,
+    expandedCategories,
+    setActiveStep,
+    selectTool,
+    toggleCategory,
+    resetWorkflow,
+  } = useNormalizationStore();
+
   const handleDatasetSelect = (dataset: DataSet) => {
-    setSelectedDataset(dataset);
+    selectDataset(dataset);
     setActiveStep('workflow');
     logger.info('Dataset selected for normalization', { datasetId: dataset.id, name: dataset.name });
     setTimeout(() => {
@@ -25,25 +38,14 @@ export default function Normalization() {
   };
 
   const handleChangeDataset = () => {
-    setActiveStep('select');
-    setSelectedDataset(null);
-    setSelectedTool(null);
+    resetWorkflow();
+    selectDataset(null);
   };
 
-  const handleToggleCategory = (categoryId: string) => {
-    setExpandedCategories((prev) => {
-      const next = new Set(prev);
-      if (next.has(categoryId)) {
-        next.delete(categoryId);
-      } else {
-        next.add(categoryId);
-      }
-      return next;
-    });
-  };
+  const handleToggleCategory = (categoryId: string) => toggleCategory(categoryId);
 
   const handleToolSelect = (toolId: string) => {
-    setSelectedTool(toolId);
+    selectTool(toolId);
     logger.info('Tool selected', { toolId, datasetId: selectedDataset?.id });
   };
 
